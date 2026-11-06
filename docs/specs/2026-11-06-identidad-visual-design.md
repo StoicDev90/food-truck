@@ -86,6 +86,8 @@ Los personajes del truck (dibujo estilo Flork, el chanchito) están permitidos c
 | `--exito` (custom) | `#047857` sobre `#ecfdf5` | igual | Vuelto, "venta registrada", diferencia 0 |
 | `--destructive` | `#b91c1c` (texto: `#fca5a5` sobre fondo noche) | `#b91c1c` | Faltante de caja, errores; `--destructive-foreground` blanco |
 | `--aviso` (custom) | `#9a3412` sobre `#fff7ed` | igual | "Sin stock", conteo final |
+| `--exito-texto` (custom) | `#6ee7b7` | `#047857` | Texto de éxito suelto sobre el fondo de la página (p. ej. diferencia 0 en el cierre); `--exito` solo va sobre `--exito-fondo` |
+| `--aviso-texto` (custom) | `#fdba74` | `#9a3412` | Texto de aviso suelto sobre el fondo de la página; `--aviso` solo va sobre `--aviso-fondo` |
 | Barra superior POS y lateral del panel | `#160822` / `#1e0b2e` | `#1e0b2e` (se mantiene oscura) | Marca constante en ambos temas |
 
 ### 7.2 Contraste verificado (WCAG, calculado)
@@ -103,6 +105,8 @@ Los personajes del truck (dibujo estilo Flork, el chanchito) están permitidos c
 | `#be185d` sobre `#faf7fc` | 5.7 |
 | `#6b21a8` sobre `#f3e8ff` | 7.4 |
 | `#047857` sobre `#ecfdf5` | 5.2 |
+| `#6ee7b7` sobre `#1e0b2e` | 12.1 |
+| `#047857` sobre `#faf7fc` | 5.2 |
 
 `--primary` es el mismo en los dos temas a propósito. La pestaña activa del menú usa `--primary` en noche y `--secondary` en claro (se decide en el componente, como en los mockups aprobados). Los tokens de shadcn no listados (`chart-*`, `sidebar-*`) se derivan de esta tabla respetando §7.2 **[call de Claude]**.
 
