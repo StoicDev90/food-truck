@@ -1,3 +1,4 @@
+import pg from 'pg'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { admin, crearUsuario, limpiarOperaciones } from './helpers'
 
@@ -64,5 +65,31 @@ describe('turnos y caja', () => {
     expect((await i.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })).error?.message).toBe('NO_AUTORIZADO')
     expect((await i.client.rpc('turno_actual')).error?.message).toBe('NO_AUTORIZADO')
     expect((await i.client.rpc('fondo_sugerido')).error?.message).toBe('NO_AUTORIZADO')
+  })
+
+  it('movimiento concurrente a un cierre no se adjunta al turno cerrado', async () => {
+    const e1 = await crearUsuario('empleado')
+    const t = (await e1.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })).data!
+    const c = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL })
+    await c.connect()
+    try {
+      await c.query('BEGIN')
+      await c.query('SELECT id FROM public.turnos WHERE id = $1 FOR UPDATE', [t])
+      await c.query(
+        'UPDATE public.turnos SET cerrado_at = now(), contado_gs = 0, contado_brl = 0, cerrado_por = $2 WHERE id = $1',
+        [t, e1.id],
+      )
+      // el builder de supabase-js es lazy: Promise.resolve lo dispara ya
+      const p = Promise.resolve(e1.client.rpc('registrar_movimiento_caja', {
+        p_sentido: 'salida', p_tipo: 'otro', p_moneda: 'PYG', p_monto: 1000, p_motivo: 'carrera',
+      }))
+      await new Promise((r) => setTimeout(r, 500))
+      await c.query('COMMIT')
+      expect((await p).error?.message).toBe('SIN_TURNO_ABIERTO')
+      const { count } = await admin.from('movimientos_caja').select('*', { count: 'exact', head: true }).eq('turno_id', t)
+      expect(count).toBe(0)
+    } finally {
+      await c.end()
+    }
   })
 })

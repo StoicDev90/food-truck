@@ -10,3 +10,4 @@ for (const linea of salida.split('\n')) {
 process.env.SUPABASE_URL = vars.API_URL
 process.env.SUPABASE_ANON_KEY = vars.ANON_KEY
 process.env.SUPABASE_SERVICE_ROLE_KEY = vars.SERVICE_ROLE_KEY
+process.env.SUPABASE_DB_URL = vars.DB_URL
