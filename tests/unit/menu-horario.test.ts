@@ -6,6 +6,10 @@ const H: Horarios = { lun: null, mar: null, mie: null, jue: null, vie: { abre: '
 describe('horario del menú', () => {
   test('viernes 20:00 abierto', () => expect(estadoNegocio(H, new Date('2026-11-06T23:00:00Z'))).toEqual({ abierto: true, cierra: '02:00' }))
   test('sábado 01:00 sigue abierto por el viernes', () => expect(estadoNegocio(H, new Date('2026-11-07T04:00:00Z'))).toEqual({ abierto: true, cierra: '02:00' }))
+  test.each(['01:00', '02:00'])('extiende el cierre cuando el sábado abre a las %s', abre => {
+    const horarios: Horarios = { ...H, sab: { abre, cierra: '23:00' } }
+    expect(estadoNegocio(horarios, new Date('2026-11-07T04:30:00Z'))).toEqual({ abierto: true, cierra: '23:00' })
+  })
   test('sábado 02:30 cerrado, abre sábado 17:00', () => expect(estadoNegocio(H, new Date('2026-11-07T05:30:00Z'))).toEqual({ abierto: false, abre: { dia: 'sab', hora: '17:00' } }))
   test('límites de apertura y cierre y próxima semana', () => {
     expect(estadoNegocio(H, new Date('2026-11-07T05:00:00Z'))).toEqual({ abierto: false, abre: { dia: 'sab', hora: '17:00' } })

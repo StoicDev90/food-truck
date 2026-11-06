@@ -11,10 +11,20 @@ export function estadoNegocio(horarios: Horarios | null, ahora: Date): EstadoNeg
   const valor = (tipo: Intl.DateTimeFormatPartTypes) => partes.find(p => p.type === tipo)!.value
   const dia = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(valor('weekday'))
   const actual = Number(valor('hour')) * 60 + Number(valor('minute'))
-  const anterior = horarios[DIAS[(dia + 6) % 7]]
-  if (anterior && minutos(anterior.cierra) <= minutos(anterior.abre) && actual < minutos(anterior.cierra)) return { abierto: true, cierra: anterior.cierra }
-  const hoy = horarios[DIAS[dia]]
-  if (hoy && actual >= minutos(hoy.abre) && (minutos(hoy.cierra) <= minutos(hoy.abre) || actual < minutos(hoy.cierra))) return { abierto: true, cierra: hoy.cierra }
+  let fin = -1
+  let cierre = ''
+  // Include yesterday's overnight interval and follow connected intervals for a week.
+  for (let offset = -1; offset <= 7; offset++) {
+    const horario = horarios[DIAS[(dia + offset + 7) % 7]]
+    if (!horario) continue
+    const inicio = offset * 1440 + minutos(horario.abre)
+    let final = offset * 1440 + minutos(horario.cierra)
+    if (minutos(horario.cierra) <= minutos(horario.abre)) final += 1440
+    if ((inicio <= actual && actual < final) || (fin > actual && inicio <= fin)) {
+      if (final > fin) { fin = final; cierre = horario.cierra }
+    }
+  }
+  if (fin > actual) return { abierto: true, cierra: cierre }
   for (let offset = 0; offset <= 7; offset++) {
     const siguiente = DIAS[(dia + offset) % 7]
     const horario = horarios[siguiente]
