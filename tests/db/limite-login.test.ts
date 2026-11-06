@@ -29,11 +29,13 @@ describe('límite de intentos de login', () => {
     expect(await reservar(c, ip)).toBe(false)
   })
 
-  it('10 reservas en paralelo para una cuenta nueva: exactamente 5 true', async () => {
+  it('10 reservas en paralelo con filas ya sembradas: exactamente 4 true (FOR UPDATE)', async () => {
     const c = nuevaCuenta()
     const ip = nuevaIp()
+    // Una reserva secuencial crea ambas filas; así el insert ... on conflict no serializa la carrera.
+    expect(await reservar(c, ip)).toBe(true)
     const r = await Promise.all(Array.from({ length: 10 }, () => reservar(c, ip)))
-    expect(r.filter(Boolean)).toHaveLength(5)
+    expect(r.filter(Boolean)).toHaveLength(4)
   })
 
   it('cuenta bloqueada: devuelve false y no incrementa nada', async () => {
