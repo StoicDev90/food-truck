@@ -124,6 +124,7 @@ Los dueños eligieron **A**.
 - Total en ₲ con equivalente en R$.
 - Productos sin stock no se pueden agregar. Al confirmar, si el stock ya no alcanza, la venta se rechaza completa.
 - Confirmar → elegir medio de pago → registrar. La venta, sus ítems, el pago y el descuento de stock ocurren en una sola transacción.
+- **Protección contra doble toque** (pedido de los dueños): al tocar "Confirmar", el botón se bloquea de inmediato y muestra "Registrando…" hasta que el servidor responde (éxito o error); no un tiempo fijo. Además cada pedido lleva una clave única generada al abrir el cobro: si la misma venta llega dos veces, se registra una sola.
 - Cada ítem guarda el precio unitario y el costo unitario vigentes al momento de la venta (para que los reportes no cambien si después se edita el precio).
 
 ```

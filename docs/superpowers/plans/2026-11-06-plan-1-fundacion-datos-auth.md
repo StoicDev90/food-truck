@@ -10,7 +10,7 @@
 
 **Spec:** `docs/specs/2026-11-06-food-truck-sistema-design.md`
 
-**Roadmap:** Plan 1 (este) → Plan 2 POS → Plan 3 Panel de dueños (+ cron cotización, Storage de fotos, alta de empleados) → Plan 4 Menú público. Diseño visual: aparte, con fotos de los dueños, antes del Plan 2.
+**Roadmap:** Plan 1 (este) → Plan 2 POS (incluye botón "Confirmar" bloqueado hasta la respuesta del servidor, spec §10.2) → Plan 3 Panel de dueños (+ cron cotización, Storage de fotos, alta de empleados) → Plan 4 Menú público. Diseño visual: aparte, con fotos de los dueños, antes del Plan 2.
 
 ## Global Constraints
 
