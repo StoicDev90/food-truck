@@ -32,7 +32,7 @@ describe('rls', () => {
     const emp = await crearUsuario('empleado')
     await emp.client.from('productos').update({ precio_gs: 1 }).eq('id', visible)
     expect(await precioDe(visible)).toBe(8000)
-    expect((await emp.client.from('productos').select('costo_gs')).error).not.toBeNull()
+    expect((await emp.client.from('productos').select('costo_gs')).error).toBeNull()
     expect((await emp.client.from('productos').select('id, precio_gs')).data!.length).toBeGreaterThan(0)
     for (const t of [
       'pagos', 'turnos', 'ventas', 'venta_items', 'movimientos_stock', 'movimientos_caja', 'correcciones_conteo',
@@ -59,6 +59,9 @@ describe('rls', () => {
   it('dueño cambia precio pero no stock', async () => {
     const p = await crearProducto({ precioGs: 8000 })
     const d = await crearUsuario('dueno')
+    const cp = await crearProducto({ costoGs: 5000 })
+    expect((await d.client.from('productos').select('costo_gs').eq('id', cp).single()).data!.costo_gs).toBe(5000)
+    expect((await d.client.from('productos').update({ costo_gs: 6000 }).eq('id', cp)).error).toBeNull()
     expect((await d.client.from('productos').update({ precio_gs: 9000 }).eq('id', p)).error).toBeNull()
     expect(await precioDe(p)).toBe(9000)
     expect((await d.client.from('productos').update({ stock: 99 }).eq('id', p)).error).not.toBeNull()

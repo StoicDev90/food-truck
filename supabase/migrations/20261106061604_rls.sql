@@ -40,9 +40,10 @@ alter table public.correcciones_conteo enable row level security;
 alter table public.cotizaciones enable row level security;
 alter table public.configuracion enable row level security;
 
--- productos: costo_gs nunca visible por API directa; stock nunca escribible directo.
+-- productos: costo_gs oculto a anon (authenticated activo lo ve); stock nunca escribible directo.
 grant select (id, categoria_id, nombre, descripcion, foto_path, precio_gs, stock, controla_stock, visible, activo, created_at)
-  on public.productos to anon, authenticated;
+  on public.productos to anon;
+grant select on public.productos to authenticated;
 grant insert (categoria_id, nombre, descripcion, foto_path, precio_gs, costo_gs, controla_stock, visible, activo)
   on public.productos to authenticated;
 grant update (categoria_id, nombre, descripcion, foto_path, precio_gs, costo_gs, controla_stock, visible, activo)
