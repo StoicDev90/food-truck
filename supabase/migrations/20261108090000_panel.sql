@@ -85,6 +85,8 @@ grant execute on function public.reporte_movimientos_caja(date, date) to authent
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('imagenes', 'imagenes', true, 2097152, array['image/jpeg', 'image/png', 'image/webp']);
 
+create policy "imagenes dueno select" on storage.objects for select to authenticated
+using (bucket_id = 'imagenes' and public.es_dueno());
 create policy "imagenes dueno insert" on storage.objects for insert to authenticated
 with check (bucket_id = 'imagenes' and public.es_dueno());
 create policy "imagenes dueno update" on storage.objects for update to authenticated

@@ -17,6 +17,11 @@ describe('bucket imagenes', () => {
       expect((await empleado.client.storage.from('imagenes').update(path, archivo, { contentType: 'image/png' })).error).not.toBeNull()
       await empleado.client.storage.from('imagenes').remove([path])
       expect((await fetch(url)).status).toBe(200)
+      const reemplazo = new Uint8Array([137, 80, 78, 71, 1])
+      expect((await dueno.client.storage.from('imagenes').upload(path, reemplazo, { contentType: 'image/png', upsert: true })).error).toBeNull()
+      expect(new Uint8Array(await (await fetch(url)).arrayBuffer())).toEqual(reemplazo)
+      expect((await dueno.client.storage.from('imagenes').remove([path])).error).toBeNull()
+      expect((await fetch(url)).status).toBe(400)
     } finally {
       await admin.storage.from('imagenes').remove([path])
     }
