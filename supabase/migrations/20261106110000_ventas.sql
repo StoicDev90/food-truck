@@ -193,11 +193,12 @@ begin
   update public.ventas
     set estado = 'anulada', anulada_por = auth.uid(), anulada_at = now(), anulada_motivo = p_motivo
     where id = v.id;
+  -- restaurar según lo que la venta movió realmente (controla_stock pudo cambiar)
   for r in
-    select vi.producto_id, sum(vi.cantidad)::int as q
-    from public.venta_items vi join public.productos p on p.id = vi.producto_id
-    where vi.venta_id = v.id and p.controla_stock
-    group by vi.producto_id order by vi.producto_id
+    select ms.producto_id, (-sum(ms.cantidad))::int as q
+    from public.movimientos_stock ms
+    where ms.venta_id = v.id and ms.tipo = 'venta'
+    group by ms.producto_id order by ms.producto_id
   loop
     perform public._aplicar_mov_stock(r.producto_id, 'anulacion', r.q, p_motivo, v.id);
   end loop;

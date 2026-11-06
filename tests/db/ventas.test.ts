@@ -144,8 +144,15 @@ describe('ventas', () => {
     expect((await admin.from('movimientos_stock').select('cantidad').eq('venta_id', v1.venta_id).eq('tipo', 'anulacion')).data).toHaveLength(2)
     expect((await e1.client.rpc('anular_venta', { p_venta_id: v1.venta_id, p_motivo: 'x' })).error?.message).toBe('VENTA_NO_ANULABLE')
     expect((await e1.client.rpc('anular_venta', { p_venta_id: crypto.randomUUID(), p_motivo: 'x' })).error?.message).toBe('VENTA_NO_ANULABLE')
-    // dueño puede anular venta ajena; venta de libre (sin stock) no mueve stock
+    // dueño puede anular venta ajena y el stock vuelve
+    const empAntes = await stock(emp)
     expect((await d.client.rpc('anular_venta', { p_venta_id: vd.venta_id, p_motivo: 'dueño' })).error).toBeNull()
+    expect(await stock(emp)).toBe(empAntes + 1)
+    // anular venta de producto sin control de stock: no mueve stock ni genera movimientos
+    const vl = (await vender(e1.client, [{ producto_id: libre, cantidad: 3 }], 'tarjeta')).data![0]
+    expect((await e1.client.rpc('anular_venta', { p_venta_id: vl.venta_id, p_motivo: 'libre' })).error).toBeNull()
+    expect(await stock(libre)).toBe(0)
+    expect((await admin.from('movimientos_stock').select().eq('producto_id', libre)).data).toHaveLength(0)
 
     // ventas_del_turno: solo total y medio, cualquier usuario activo
     const lista = (await e2.client.rpc('ventas_del_turno')).data!
@@ -255,5 +262,28 @@ describe('ventas', () => {
     })
     expect(await stock(p)).toBe(5)
     expect((await admin.from('ventas').select().eq('clave_idempotencia', clave)).data).toHaveLength(1)
+  })
+
+  it('anular restaura según lo que la venta movió, aunque controla_stock cambie', async () => {
+    const e1 = await crearUsuario('empleado')
+    await e1.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })
+    const movs = async (id: string) =>
+      (await admin.from('movimientos_stock').select().eq('producto_id', id).eq('tipo', 'anulacion')).data!.length
+    // vendido con control, luego se apaga: igual restaura
+    const a = await crearProducto({ stock: 10 })
+    const va = (await vender(e1.client, [{ producto_id: a, cantidad: 3 }], 'tarjeta')).data![0]
+    expect(await stock(a)).toBe(7)
+    await admin.from('productos').update({ controla_stock: false }).eq('id', a)
+    expect((await e1.client.rpc('anular_venta', { p_venta_id: va.venta_id, p_motivo: 'x' })).error).toBeNull()
+    expect(await stock(a)).toBe(10)
+    expect(await movs(a)).toBe(1)
+    // vendido sin control, luego se enciende: no suma stock inexistente
+    const b = await crearProducto({ stock: 5, controlaStock: false })
+    const vb = (await vender(e1.client, [{ producto_id: b, cantidad: 2 }], 'tarjeta')).data![0]
+    expect(await stock(b)).toBe(5)
+    await admin.from('productos').update({ controla_stock: true }).eq('id', b)
+    expect((await e1.client.rpc('anular_venta', { p_venta_id: vb.venta_id, p_motivo: 'x' })).error).toBeNull()
+    expect(await stock(b)).toBe(5)
+    expect(await movs(b)).toBe(0)
   })
 })
