@@ -9,6 +9,10 @@ describe('claves de límite de login', () => {
   it('toma la primera IP de x-forwarded-for', () => {
     expect(ipDeEncabezados(new Headers({ 'x-forwarded-for': '1.2.3.4, 10.0.0.1' }))).toBe('ip:1.2.3.4')
   })
+  it('prefiere x-vercel-forwarded-for sobre un x-forwarded-for falseado', () => {
+    const h = new Headers({ 'x-vercel-forwarded-for': '9.9.9.9', 'x-forwarded-for': '1.1.1.1' })
+    expect(ipDeEncabezados(h)).toBe('ip:9.9.9.9')
+  })
   it('cae a x-real-ip y luego a desconocida', () => {
     expect(ipDeEncabezados(new Headers({ 'x-real-ip': '5.6.7.8' }))).toBe('ip:5.6.7.8')
     expect(ipDeEncabezados(new Headers())).toBe('ip:desconocida')
