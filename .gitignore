@@ -44,3 +44,6 @@ next-env.d.ts
 # allow template
 !.env.example
 node_modules
+
+# brainstorm / sdd scratch
+.superpowers/

@@ -16,6 +16,7 @@ La configuración de `supabase/config.toml` solo vale en local; en producción s
 
 ## Base de datos
 - [ ] Aplicar migraciones solo por CLI: `npx supabase link` y `npx supabase db push`.
+- [ ] Verificar que la API ignora `Prefer: tx=rollback` (configuración por defecto `db-tx-end=commit`): un empleado no debe poder llamar a `cerrar_turno` y deshacerlo para espiar el efectivo esperado. Prueba: llamar con ese header en un turno de prueba y confirmar que el turno quedó cerrado.
 - [ ] No crear tablas ni funciones desde Studio: los permisos por defecto de `supabase_admin` darían acceso a `anon` y `authenticated`.
 - La migración `20261106070000_default_acl_funciones.sql` revoca EXECUTE de PUBLIC en funciones futuras de todos los esquemas. Una función de auth hook futura debe hacer `grant execute ... to supabase_auth_admin` explícito.
 

@@ -129,7 +129,7 @@ Los dueños eligieron **A**.
 - Un turno puede pasar la medianoche; pertenece al día en que se abrió **[call de Claude]**.
 - El empleado abre turno declarando el fondo inicial de caja (₲ y R$; R$ normalmente 0) **[R$ en fondo: call de Claude]**. El POS propone como valor por defecto lo contado al cierre del turno anterior; si el empleado declara otro monto, la diferencia entre turnos se muestra en los reportes **[call de Claude]**.
 - Sin turno abierto no se pueden registrar ventas ni movimientos de caja.
-- **Conteo a ciegas**: el POS nunca le muestra al empleado el efectivo esperado (ni durante el turno ni al cerrar). Al cerrar, el empleado cuenta ₲ y R$ por separado, los carga y confirma; recién entonces se muestra lo esperado y la diferencia. El conteo confirmado es final para el empleado: solo un dueño puede corregirlo, y la corrección queda registrada (quién, cuándo, valor anterior y nuevo). Después del cierre, la sesión del empleado se cierra.
+- **Conteo a ciegas**: el POS nunca le muestra al empleado el efectivo esperado (ni durante el turno ni al cerrar). Al cerrar, el empleado cuenta ₲ y R$ por separado, los carga y confirma; recién entonces se muestra lo esperado y la diferencia. El conteo confirmado es final para el empleado: solo un dueño puede corregirlo, y la corrección queda registrada (quién, cuándo, valor anterior y nuevo). Después del cierre se muestra el resultado y la sesión del empleado se cierra (vuelve al login; el próximo turno entra con usuario y PIN): al tocar "Listo" o, si nadie toca nada, a los 150 segundos, para que el resultado no quede a la vista en la ventanilla (decisión de los dueños). La lista de ventas del turno para anular no se limita (decisión de los dueños).
 
 ### 10.2 Venta
 - Grilla de productos con botones grandes (por categoría). Tocar un producto suma 1; + y − para ajustar.
@@ -181,7 +181,7 @@ Vuelto:   ₲ 41.500
   - **Entradas**: aporte de cambio (un dueño trae billetes chicos), otro ingreso **[call de Claude: los dueños pidieron registrar todo movimiento]**.
   - Un cambio de moneda dentro de la caja (ej. sacar R$ y poner ₲) se registra como una salida en una moneda + una entrada en la otra **[call de Claude]**.
 - Cada movimiento: tipo, sentido, monto, moneda (₲ o R$), motivo obligatorio, quién lo registró, hora, turno.
-- Los registra el empleado desde el POS en el momento (también un dueño).
+- **Solo los dueños** registran movimientos de caja (desde el panel o entrando al POS con su usuario). El empleado no puede registrarlos ni ve la opción. Si el empleado saca plata de la caja, aparece como diferencia en el cierre (decisión de los dueños; reemplaza la versión anterior que permitía al empleado).
 
 ### 10.6 Ingreso de stock desde el POS
 - El empleado puede registrar ingresos ("preparé 15 sándwiches de carne"). No puede editar productos, precios ni hacer ajustes.
