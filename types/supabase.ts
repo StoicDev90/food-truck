@@ -305,8 +305,14 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "_probe_default_acl":
+            "_aplicar_mov_stock":
+{ Args: { "p_cantidad": number,"p_motivo": string,"p_producto_id": string,"p_tipo": Database["public"]['Enums']["tipo_mov_stock"],"p_venta_id": string }; Returns: number
+                           },
+"_probe_default_acl":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"ajustar_stock":
+{ Args: { "p_cantidad": number,"p_motivo": string,"p_producto_id": string }; Returns: number
                            },
 "costos_productos":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -327,6 +333,9 @@ isOneToOne: false
                            },
 "registrar_cotizacion_api":
 { Args: { "p_fecha": string,"p_fuente": string,"p_valor": number }; Returns: undefined
+                           },
+"registrar_ingreso_stock":
+{ Args: { "p_cantidad": number,"p_motivo"?: string,"p_producto_id": string }; Returns: number
                            },
 "rol_actual":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol_usuario"]
