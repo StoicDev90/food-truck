@@ -402,7 +402,7 @@ isOneToOne: false
                            },
 "reporte_cierres":
 { Args: { "p_desde": string,"p_hasta": string }; Returns: {
-              "abierto_at": string,"cerrado_at": string,"cerrado_por_nombre": string,"contado_anterior_brl": number,"contado_anterior_gs": number,"contado_brl": number,"contado_gs": number,"corregido": boolean,"diferencia_brl": number,"diferencia_gs": number,"empleado_nombre": string,"entradas_brl": number,"entradas_gs": number,"esperado_brl": number,"esperado_gs": number,"fecha": string,"fondo_brl": number,"fondo_gs": number,"salidas_brl": number,"salidas_gs": number,"tarjetas_gs": number,"transferencias_gs": number,"turno_id": string,"ventas_efectivo_brl": number,"ventas_efectivo_gs": number
+              "abierto_at": string,"cerrado_at": string,"cerrado_por_id": string,"cerrado_por_nombre": string,"contado_anterior_brl": number,"contado_anterior_gs": number,"contado_brl": number,"contado_gs": number,"corregido": boolean,"diferencia_brl": number,"diferencia_gs": number,"empleado_id": string,"empleado_nombre": string,"entradas_brl": number,"entradas_gs": number,"esperado_brl": number,"esperado_gs": number,"fecha": string,"fondo_brl": number,"fondo_gs": number,"salidas_brl": number,"salidas_gs": number,"tarjetas_gs": number,"transferencias_gs": number,"turno_id": string,"ventas_efectivo_brl": number,"ventas_efectivo_gs": number
             }[]
                            },
 "reporte_mas_vendidos":

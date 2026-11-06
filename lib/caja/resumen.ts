@@ -44,7 +44,7 @@ type CierreRow = Database['public']['Functions']['reporte_cierres']['Returns'][n
 export function mapCierre(r: CierreRow) {
   const nullable = (n: number | null) => n === null ? null : Number(n)
   return {
-    turnoId: r.turno_id, fecha: r.fecha, empleadoNombre: r.empleado_nombre,
+    turnoId: r.turno_id, fecha: r.fecha, empleadoId: r.empleado_id, cerradoPorId: r.cerrado_por_id as string | null, empleadoNombre: r.empleado_nombre,
     abiertoAt: r.abierto_at, cerradoAt: r.cerrado_at as string | null,
     cerradoPorNombre: r.cerrado_por_nombre as string | null, corregido: r.corregido,
     contadoAnteriorGs: nullable(r.contado_anterior_gs), contadoAnteriorBrl: nullable(r.contado_anterior_brl),

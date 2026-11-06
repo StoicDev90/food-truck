@@ -35,13 +35,13 @@ revoke all on function public.reporte_mas_vendidos(date, date) from public, anon
 grant execute on function public.reporte_mas_vendidos(date, date) to authenticated, service_role;
 
 create function public.reporte_cierres(p_desde date, p_hasta date)
-returns table (turno_id uuid, fecha date, empleado_nombre text, abierto_at timestamptz, cerrado_at timestamptz, cerrado_por_nombre text, contado_anterior_gs int, contado_anterior_brl numeric, corregido boolean, esperado_gs bigint, esperado_brl numeric, contado_gs bigint, contado_brl numeric, diferencia_gs bigint, diferencia_brl numeric, transferencias_gs bigint, tarjetas_gs bigint, fondo_gs bigint, fondo_brl numeric, ventas_efectivo_gs bigint, ventas_efectivo_brl numeric, entradas_gs bigint, entradas_brl numeric, salidas_gs bigint, salidas_brl numeric)
+returns table (turno_id uuid, fecha date, empleado_id uuid, empleado_nombre text, abierto_at timestamptz, cerrado_at timestamptz, cerrado_por_id uuid, cerrado_por_nombre text, contado_anterior_gs int, contado_anterior_brl numeric, corregido boolean, esperado_gs bigint, esperado_brl numeric, contado_gs bigint, contado_brl numeric, diferencia_gs bigint, diferencia_brl numeric, transferencias_gs bigint, tarjetas_gs bigint, fondo_gs bigint, fondo_brl numeric, ventas_efectivo_gs bigint, ventas_efectivo_brl numeric, entradas_gs bigint, entradas_brl numeric, salidas_gs bigint, salidas_brl numeric)
 language plpgsql stable security definer set search_path = ''
 as $$
 begin
   if not public.es_dueno() then raise exception 'NO_AUTORIZADO'; end if;
   if p_desde is null or p_hasta is null or p_desde > p_hasta or p_hasta - p_desde > 366 then raise exception 'VALOR_INVALIDO'; end if;
-  return query select t.id, public.fecha_py(t.abierto_at), e.nombre, t.abierto_at, t.cerrado_at, c.nombre, anterior.contado_gs, anterior.contado_brl,
+  return query select t.id, public.fecha_py(t.abierto_at), t.empleado_id, e.nombre, t.abierto_at, t.cerrado_at, t.cerrado_por, c.nombre, anterior.contado_gs, anterior.contado_brl,
  exists(select 1 from public.correcciones_conteo cc where cc.turno_id = t.id), r.*
  from public.turnos t join public.perfiles e on e.id = t.empleado_id left join public.perfiles c on c.id = t.cerrado_por
  left join lateral (select a.contado_gs, a.contado_brl from public.turnos a where a.cerrado_at is not null and a.abierto_at < t.abierto_at order by a.abierto_at desc limit 1) anterior on true

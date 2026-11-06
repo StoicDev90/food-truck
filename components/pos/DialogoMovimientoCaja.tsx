@@ -6,7 +6,7 @@ import { registrarMovimientoCaja } from '@/lib/pos/acciones'
 import { parseMontoBrl, parseMontoGs } from '@/lib/pos/formato'
 type Sentido = 'salida' | 'entrada'
 type Tipo = 'retiro' | 'pago_proveedor' | 'aporte_cambio' | 'otro'
-export function DialogoMovimientoCaja({ onCerrar }: { onCerrar: () => void }) {
+export function DialogoMovimientoCaja({ onCerrar, mostrarCancelar = false }: { onCerrar: () => void; mostrarCancelar?: boolean }) {
   const router = useRouter()
   const [sentido, setSentido] = useState<Sentido>('salida')
   const [tipo, setTipo] = useState<Tipo>('retiro')
@@ -34,5 +34,6 @@ export function DialogoMovimientoCaja({ onCerrar }: { onCerrar: () => void }) {
     <label className="block">Motivo<input className={campo} value={motivo} onChange={e => setMotivo(e.target.value)} /></label>
     {error && <p role="alert" className="text-destructive-texto">{error}</p>}
     <button disabled={pendiente || !motivo.trim()} className="min-h-11 rounded-md bg-primary px-4 font-bold text-primary-foreground disabled:opacity-50">{pendiente ? 'Guardando…' : 'Registrar movimiento'}</button>
+    {mostrarCancelar && <button type="button" disabled={pendiente} className="min-h-11 px-4" onClick={onCerrar}>Cancelar</button>}
   </form>
 }
