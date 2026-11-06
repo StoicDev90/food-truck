@@ -37,6 +37,7 @@ function CobroAbierto({ pedido, cotizacion, onCerrar, onVendido, onSinTurno }: P
   const [pendiente, setPendiente] = useState(false)
   const [error, setError] = useState('')
   const [venta, setVenta] = useState<Venta | null>(null)
+  const botonConfirmar = useRef<HTMLButtonElement>(null)
   const bloqueado = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const total = totalGs(pedido)
@@ -79,8 +80,14 @@ function CobroAbierto({ pedido, cotizacion, onCerrar, onVendido, onSinTurno }: P
     function teclado(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); return }
-      if (e.key === 'Enter') { e.preventDefault(); confirmar(); return }
       const target = e.target as HTMLElement | null
+      if (e.key === 'Enter') {
+        if (target === botonConfirmar.current || target?.id === 'monto-cobro') {
+          e.preventDefault()
+          confirmar()
+        }
+        return
+      }
       if (target instanceof Element && target.closest('input, textarea, select')) return
       const indice = ['1', '2', '3', '4'].indexOf(e.key)
       if (indice >= 0) { e.preventDefault(); elegir(medios[indice].id) }
@@ -137,7 +144,7 @@ function CobroAbierto({ pedido, cotizacion, onCerrar, onVendido, onSinTurno }: P
             {error && <p role="alert" className="text-destructive-texto">{error}</p>}
             <div className="flex gap-2">
               <button type="button" onClick={cerrar} disabled={pendiente} className={`${control} flex-1`}>Cancelar</button>
-              <button type="button" onClick={confirmar} disabled={pendiente || !preview.alcanza}
+              <button ref={botonConfirmar} type="button" onClick={confirmar} disabled={pendiente || !preview.alcanza}
                 className={`${control} flex flex-1 items-center justify-center gap-2 bg-primary text-primary-foreground disabled:opacity-50`}>
                 {pendiente ? <><LoaderCircle aria-hidden="true" className="size-5 animate-spin motion-reduce:animate-none" />Registrando…</> : efectivo ? 'CONFIRMAR' : 'Sí, confirmar'}
               </button>

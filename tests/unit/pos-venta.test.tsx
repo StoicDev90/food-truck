@@ -26,6 +26,15 @@ describe('pantalla de venta', () => {
     fireEvent.click(screen.getByRole('button', { name: 'COBRAR' }))
     expect(screen.getByRole('dialog', { name: 'Cobrar ₲ 8.000' })).toBeInTheDocument()
   })
+  it('mueve el foco al diálogo accesible y lo devuelve a COBRAR al cerrar', async () => {
+    render(<PantallaVenta datos={datos} />)
+    fireEvent.click(screen.getByRole('button', { name: /Empanada/ }))
+    const cobrar = screen.getByRole('button', { name: 'COBRAR' }); cobrar.focus(); fireEvent.click(cobrar)
+    const dialogo = screen.getByRole('dialog', { name: 'Cobrar ₲ 8.000' })
+    await vi.waitFor(() => expect(dialogo.contains(document.activeElement)).toBe(true))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await vi.waitFor(() => expect(cobrar).toHaveFocus())
+  })
   it('suma productos y muestra cantidades y totales', () => {
     render(<PantallaVenta datos={datos} />)
     const producto = screen.getByRole('button', { name: /Empanada de carne/ })

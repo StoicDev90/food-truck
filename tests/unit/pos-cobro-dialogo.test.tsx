@@ -59,7 +59,7 @@ describe('diálogo de cobro', () => {
     const boton = screen.getByRole('button', { name: 'Sí, confirmar' })
     act(() => {
       if (tipo === 'click') { boton.click(); boton.click() }
-      else { fireEvent.keyDown(document, { key: 'Enter' }); fireEvent.keyDown(document, { key: 'Enter' }) }
+      else { boton.focus(); fireEvent.keyDown(boton, { key: 'Enter' }); fireEvent.keyDown(boton, { key: 'Enter' }) }
     })
     expect(registrarVenta).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: /Registrando…/ })).toBeDisabled()
@@ -99,4 +99,81 @@ describe('diálogo de cobro', () => {
     const props = abrir(); fireEvent.keyDown(document, { key: 'Escape' })
     expect(props.onCerrar).toHaveBeenCalled(); expect(registrarVenta).not.toHaveBeenCalled()
   })
+  it('Enter en Cancelar cierra sin registrar', () => {
+    const props = abrir(); transferencia()
+    const boton = screen.getByRole('button', { name: 'Cancelar' }); boton.focus()
+    if (fireEvent.keyDown(boton, { key: 'Enter' })) fireEvent.click(boton)
+    expect(props.onCerrar).toHaveBeenCalledOnce()
+    expect(registrarVenta).not.toHaveBeenCalled()
+  })
+  it('Enter en un medio y un importe rápido activa ese control sin registrar', () => {
+    abrir()
+    const medio = screen.getByRole('button', { name: 'Efectivo R$' }); medio.focus()
+    if (fireEvent.keyDown(medio, { key: 'Enter' })) fireEvent.click(medio)
+    expect(medio).toHaveAttribute('aria-pressed', 'true')
+    const importe = screen.getByRole('button', { name: 'R$ 50' }); importe.focus()
+    if (fireEvent.keyDown(importe, { key: 'Enter' })) fireEvent.click(importe)
+    expect(screen.getByLabelText('Recibido')).toHaveValue('50')
+    expect(registrarVenta).not.toHaveBeenCalled()
+  })
+  it('permite escribir 100 sin cambiar el medio', () => {
+    abrir(); fireEvent.click(screen.getByRole('button', { name: 'Efectivo R$' }))
+    const input = screen.getByLabelText('Recibido'); input.focus()
+    for (const digit of '100') {
+      if (fireEvent.keyDown(input, { key: digit })) fireEvent.change(input, { target: { value: (input as HTMLInputElement).value + digit } })
+    }
+    expect(input).toHaveValue('100')
+    expect(screen.getByRole('button', { name: 'Efectivo R$' })).toHaveAttribute('aria-pressed', 'true')
+  })
+  it('no confirma un importe insuficiente con Enter', () => {
+    abrir(); const input = screen.getByLabelText('Recibido')
+    fireEvent.change(input, { target: { value: '20000' } }); input.focus()
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(registrarVenta).not.toHaveBeenCalled()
+  })
+  it('confirma con Enter desde el importe suficiente', () => {
+    vi.mocked(registrarVenta).mockReturnValue(new Promise(() => {}))
+    abrir(); const input = screen.getByLabelText('Recibido')
+    fireEvent.change(input, { target: { value: '31000' } }); input.focus()
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(registrarVenta).toHaveBeenCalledOnce()
+  })
+  it('genera otra clave al abrir después de una venta', async () => {
+    vi.useFakeTimers()
+    vi.mocked(registrarVenta).mockResolvedValue({ ok: true, data: { ventaId: 'v', totalGs: 31000, vueltoGs: 0 } })
+    const props = callbacks()
+    const vista = render(<DialogoCobro abierto pedido={pedido} cotizacion={1450} {...props} />)
+    transferencia(); await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Sí, confirmar' })) })
+    act(() => vi.advanceTimersByTime(2000))
+    vista.rerender(<DialogoCobro abierto={false} pedido={pedido} cotizacion={1450} {...props} />)
+    vista.rerender(<DialogoCobro abierto pedido={pedido} cotizacion={1450} {...props} />)
+    transferencia(); await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Sí, confirmar' })) })
+    expect(vi.mocked(registrarVenta).mock.calls[0][0].clave).not.toBe(vi.mocked(registrarVenta).mock.calls[1][0].clave)
+  })
+  it.each(['cerrar', 'desmontar'])('cancela el timer de éxito al %s', async modo => {
+    vi.useFakeTimers()
+    vi.mocked(registrarVenta).mockResolvedValue({ ok: true, data: { ventaId: 'v', totalGs: 31000, vueltoGs: 0 } })
+    const props = callbacks()
+    const vista = render(<DialogoCobro abierto pedido={pedido} cotizacion={1450} {...props} />)
+    transferencia(); await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Sí, confirmar' })) })
+    if (modo === 'cerrar') vista.rerender(<DialogoCobro abierto={false} pedido={pedido} cotizacion={1450} {...props} />)
+    else vista.unmount()
+    act(() => vi.advanceTimersByTime(3000))
+    expect(props.onVendido).not.toHaveBeenCalled()
+  })
+  it('permite reintentar un rechazo de red con la misma clave', async () => {
+    vi.mocked(registrarVenta).mockRejectedValue(new Error('network'))
+    abrir(); transferencia(); fireEvent.click(screen.getByRole('button', { name: 'Sí, confirmar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo completar. Probá de nuevo.')
+    const boton = screen.getByRole('button', { name: 'Sí, confirmar' }); expect(boton).toBeEnabled()
+    fireEvent.click(boton)
+    await waitFor(() => expect(registrarVenta).toHaveBeenCalledTimes(2))
+    expect(vi.mocked(registrarVenta).mock.calls[0][0].clave).toBe(vi.mocked(registrarVenta).mock.calls[1][0].clave)
+  })
+  it.each(['MONTO_INSUFICIENTE', 'SIN_COTIZACION'] as const)('muestra el error %s', async codigo => {
+    vi.mocked(registrarVenta).mockResolvedValue({ ok: false, codigo, error: MENSAJES_ERROR[codigo] })
+    abrir(); transferencia(); fireEvent.click(screen.getByRole('button', { name: 'Sí, confirmar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(MENSAJES_ERROR[codigo])
+  })
+
 })
