@@ -8,7 +8,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-nunito);
-  
   --font-heading: var(--font-fredoka);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -35,6 +34,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-texto: var(--destructive-texto);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -66,7 +66,7 @@
   --accent: #f3e8ff; --accent-foreground: #2a0e3f;
   --marca: #7e22ce; --precio: #be185d; --superficie-boton: #ffffff;
   --border: #e9d5ff; --input: #e9d5ff; --ring: #7e22ce;
-  --destructive: #b91c1c; --destructive-foreground: #ffffff;
+  --destructive: #b91c1c; --destructive-foreground: #ffffff; --destructive-texto: #b91c1c;
   --exito: #047857; --exito-fondo: #ecfdf5;
   --aviso: #9a3412; --aviso-fondo: #fff7ed;
   --chart-1: #7e22ce; --chart-2: #be185d; --chart-3: #047857; --chart-4: #9a3412; --chart-5: #6b21a8;
@@ -82,6 +82,7 @@
 }
 
 .dark {
+  --destructive-texto: #fca5a5;
   --background: #1e0b2e; --foreground: #fdf4ff;
   --card: #2e1245; --card-foreground: #fdf4ff;
   --popover: #2e1245; --popover-foreground: #fdf4ff;

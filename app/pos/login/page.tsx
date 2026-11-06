@@ -25,11 +25,12 @@ export default function LoginPos() {
           <form action={accion} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="usuario">Usuario</Label>
-              <Input id="usuario" name="usuario" autoComplete="username" required />
+              <Input className="min-h-11" id="usuario" name="usuario" autoComplete="username" required />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="pin">PIN</Label>
               <Input
+                className="min-h-11"
                 id="pin"
                 name="pin"
                 type="password"
@@ -40,7 +41,7 @@ export default function LoginPos() {
               />
             </div>
             {estado.error && (
-              <p role="alert" className="text-sm text-destructive dark:text-red-300">
+              <p role="alert" className="text-sm text-destructive-texto">
                 {estado.error}
               </p>
             )}

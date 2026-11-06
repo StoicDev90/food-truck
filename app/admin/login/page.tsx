@@ -25,11 +25,12 @@ export default function LoginAdmin() {
           <form action={accion} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" autoComplete="email" required />
+              <Input className="min-h-11" id="email" name="email" type="email" autoComplete="email" required />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Contraseña</Label>
               <Input
+                className="min-h-11"
                 id="password"
                 name="password"
                 type="password"
@@ -38,7 +39,7 @@ export default function LoginAdmin() {
               />
             </div>
             {estado.error && (
-              <p role="alert" className="text-sm text-destructive dark:text-red-300">
+              <p role="alert" className="text-sm text-destructive-texto">
                 {estado.error}
               </p>
             )}
