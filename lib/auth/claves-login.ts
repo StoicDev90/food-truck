@@ -12,5 +12,5 @@ export function ipDeEncabezados(h: Headers): string {
     primero(h.get('x-vercel-forwarded-for')) ||
     primero(h.get('x-real-ip')) ||
     primero(h.get('x-forwarded-for'))
-  return 'ip:' + (ip || 'desconocida')
+  return 'ip:' + (ip ? ip.slice(0, 64) : 'desconocida')
 }
