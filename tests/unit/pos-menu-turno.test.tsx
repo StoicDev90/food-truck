@@ -1,27 +1,272 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-const m = vi.hoisted(() => ({ stock: vi.fn(), ventas: vi.fn(), anular: vi.fn(), movimiento: vi.fn(), refresh: vi.fn() }))
-vi.mock('@/lib/pos/acciones', () => ({ ingresarStock: m.stock, ventasDelTurno: m.ventas, anularVenta: m.anular, registrarMovimientoCaja: m.movimiento }))
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: m.refresh }) }))
-vi.mock('@/components/pos/CerrarTurno', () => ({ CerrarTurno: () => <p>Conteo ciego</p> }))
+const m = vi.hoisted(() => ({
+  stock: vi.fn(),
+  ventas: vi.fn(),
+  anular: vi.fn(),
+  movimiento: vi.fn(),
+  refresh: vi.fn(),
+}))
+vi.mock('@/lib/pos/acciones', () => ({
+  ingresarStock: m.stock,
+  ventasDelTurno: m.ventas,
+  anularVenta: m.anular,
+  registrarMovimientoCaja: m.movimiento,
+}))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: m.refresh }),
+}))
+vi.mock('@/components/pos/CerrarTurno', () => ({
+  CerrarTurno: () => <p>Conteo ciego</p>,
+}))
 import { MenuTurno } from '@/components/pos/MenuTurno'
-const productos = [{ id: 'p', nombre: 'Sándwich', categoriaId: 'c', precioGs: 1000, stock: 2, controlaStock: true }]
-const ventas = Array.from({ length: 30 }, (_, i) => ({ id: String(i), createdAt: '2026-11-06T12:00:00Z', totalGs: 1000 + i, medio: 'tarjeta', estado: i === 0 ? 'anulada' : 'confirmada', empleadoNombre: 'Ana' }))
-const abrir = (rol: 'dueno' | 'empleado' = 'dueno') => { render(<><MenuTurno rol={rol} productos={productos} turnoId="t" abierto="hoy" /><button>Fuera</button></>); fireEvent.click(screen.getByRole('button', { name: 'Menú del turno' })) }
-const abrirMovimiento = () => { abrir(); fireEvent.click(screen.getByText('Movimiento de caja')) }
-const abrirVentas = async () => { abrir(); fireEvent.click(screen.getByText('Ventas del turno')); return await screen.findAllByRole('listitem') }
-beforeEach(() => { vi.clearAllMocks(); m.stock.mockResolvedValue({ ok: true }); m.ventas.mockResolvedValue({ ok: true, data: ventas }); m.anular.mockResolvedValue({ ok: true }); m.movimiento.mockResolvedValue({ ok: true }) })
+const productos = [
+  {
+    id: 'p',
+    nombre: 'Sándwich',
+    categoriaId: 'c',
+    precioGs: 1000,
+    stock: 2,
+    controlaStock: true,
+  },
+]
+const ventas = Array.from({ length: 30 }, (_, i) => ({
+  id: String(i),
+  createdAt: '2026-11-06T12:00:00Z',
+  totalGs: 1000 + i,
+  medio: 'tarjeta',
+  estado: i === 0 ? 'anulada' : 'confirmada',
+  empleadoNombre: 'Ana',
+}))
+const renderMenu = (rol: 'dueno' | 'empleado' = 'dueno') => {
+  render(
+    <>
+      <MenuTurno rol={rol} productos={productos} turnoId="t" abierto="hoy" />
+      <button>Fuera</button>
+    </>
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Menú del turno' }))
+}
+const abrirMovimiento = () => {
+  renderMenu()
+  fireEvent.click(screen.getByText('Movimiento de caja'))
+}
+const abrirVentas = async () => {
+  renderMenu()
+  fireEvent.click(screen.getByText('Ventas del turno'))
+  return await screen.findAllByRole('listitem')
+}
+beforeEach(() => {
+  vi.clearAllMocks()
+  m.stock.mockResolvedValue({ ok: true })
+  m.ventas.mockResolvedValue({ ok: true, data: ventas })
+  m.anular.mockResolvedValue({ ok: true })
+  m.movimiento.mockResolvedValue({ ok: true })
+})
+
 afterEach(cleanup)
-it('muestra caja solo al dueño', () => { abrir('empleado'); expect(screen.queryByText('Movimiento de caja')).not.toBeInTheDocument(); cleanup(); abrir(); expect(screen.getByText('Movimiento de caja')).toBeInTheDocument() })
-it('cierra con Escape y devuelve el foco al botón', () => { abrir(); screen.getByText('Ingreso de stock').focus(); fireEvent.keyDown(document.activeElement!, { key: 'Escape' }); expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument(); expect(screen.getByRole('button', { name: 'Menú del turno' })).toHaveFocus() })
-it('cierra al hacer clic fuera', () => { abrir(); fireEvent.pointerDown(screen.getByText('Fuera')); fireEvent.click(screen.getByText('Fuera')); expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument() })
-it('cierra cuando el foco sale del menú', () => { abrir(); screen.getByText('Ingreso de stock').focus(); act(() => screen.getByText('Fuera').focus()); expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument() })
-it('valida e ingresa stock', async () => { abrir(); fireEvent.click(screen.getByText('Ingreso de stock')); fireEvent.change(screen.getByLabelText('Producto'), { target: { value: 'p' } }); for (const value of ['0', 'abc']) { fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value } }); fireEvent.submit(screen.getByRole('button', { name: 'Ingresar stock' }).closest('form')!); expect(m.stock).not.toHaveBeenCalled() } fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '15' } }); fireEvent.click(screen.getByRole('button', { name: 'Ingresar stock' })); await waitFor(() => expect(m.stock).toHaveBeenCalledWith('p', 15, null)); expect(m.refresh).toHaveBeenCalled() })
-it('lista las 30 ventas con hora y total formateados', async () => { const filas = await abrirVentas(); expect(filas).toHaveLength(30); expect(filas[0]).toHaveTextContent(/09:00.*₲ 1\.000 · Tarjeta · Ana/) })
-it('no permite anular una venta ya anulada', async () => { const filas = await abrirVentas(); expect(within(filas[0]).getByText('Anulada')).toBeInTheDocument(); expect(within(filas[0]).queryByRole('button', { name: 'Anular' })).not.toBeInTheDocument() })
-it('anula con motivo y actualiza específicamente la fila', async () => { const filas = await abrirVentas(); fireEvent.click(within(filas[1]).getByRole('button', { name: 'Anular' })); const confirmar = screen.getByRole('button', { name: 'Confirmar anulación' }); expect(confirmar).toBeDisabled(); fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Error' } }); fireEvent.click(confirmar); await waitFor(() => expect(m.anular).toHaveBeenCalledWith('1', 'Error')); await waitFor(() => expect(within(filas[1]).getByText('Anulada')).toBeInTheDocument()); expect(within(filas[1]).queryByRole('button', { name: 'Anular' })).not.toBeInTheDocument(); expect(m.refresh).toHaveBeenCalled() })
-it('ofrece exactamente los tipos de cada sentido', () => { abrirMovimiento(); const tipo = screen.getByLabelText('Tipo'); expect(within(tipo).getAllByRole('option').map(o => o.textContent)).toEqual(['Retiro de dueño', 'Pago a proveedor', 'Otro egreso']); fireEvent.change(screen.getByLabelText('Sentido'), { target: { value: 'entrada' } }); expect(within(tipo).getAllByRole('option').map(o => o.textContent)).toEqual(['Aporte de cambio', 'Otro ingreso']) })
-it('requiere un motivo no vacío', () => { abrirMovimiento(); fireEvent.change(screen.getByLabelText('Monto'), { target: { value: '100' } }); const boton = screen.getByRole('button', { name: 'Registrar movimiento' }); for (const value of ['', '   ']) { fireEvent.change(screen.getByLabelText('Motivo'), { target: { value } }); expect(boton).toBeDisabled(); fireEvent.submit(boton.closest('form')!); expect(m.movimiento).not.toHaveBeenCalled() } })
-it('registra el pago a proveedor en guaraníes', async () => { abrirMovimiento(); fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'pago_proveedor' } }); fireEvent.change(screen.getByLabelText('Moneda'), { target: { value: 'PYG' } }); fireEvent.change(screen.getByLabelText('Monto'), { target: { value: '150.000' } }); fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Hielo' } }); fireEvent.click(screen.getByRole('button', { name: 'Registrar movimiento' })); await waitFor(() => expect(m.movimiento).toHaveBeenCalledWith({ sentido: 'salida', tipo: 'pago_proveedor', moneda: 'PYG', monto: 150000, motivo: 'Hielo' })); expect(m.refresh).toHaveBeenCalled() })
-it('registra reales con monto decimal', async () => { abrirMovimiento(); fireEvent.change(screen.getByLabelText('Moneda'), { target: { value: 'BRL' } }); fireEvent.change(screen.getByLabelText('Monto'), { target: { value: '50,5' } }); fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Cambio' } }); fireEvent.click(screen.getByRole('button', { name: 'Registrar movimiento' })); await waitFor(() => expect(m.movimiento).toHaveBeenCalledWith({ sentido: 'salida', tipo: 'retiro', moneda: 'BRL', monto: 50.5, motivo: 'Cambio' })) })
-it('abre cierre de turno', async () => { abrir(); fireEvent.click(screen.getByText('Cerrar turno')); expect(screen.getByRole('dialog', { name: 'Cerrar turno' })).toBeInTheDocument(); expect(await screen.findByText('Conteo ciego')).toBeInTheDocument() })
+
+it('muestra caja solo al dueño', () => {
+  renderMenu('empleado')
+
+  expect(screen.queryByText('Movimiento de caja')).not.toBeInTheDocument()
+  cleanup()
+  renderMenu()
+
+  expect(screen.getByText('Movimiento de caja')).toBeInTheDocument()
+})
+
+it('cierra con Escape y devuelve el foco al botón', () => {
+  renderMenu()
+  screen.getByText('Ingreso de stock').focus()
+  fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+
+  expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Menú del turno' })).toHaveFocus()
+})
+
+it('cierra al hacer clic fuera', () => {
+  renderMenu()
+  fireEvent.pointerDown(screen.getByText('Fuera'))
+  fireEvent.click(screen.getByText('Fuera'))
+
+  expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument()
+})
+
+it('cierra cuando el foco sale del menú', () => {
+  renderMenu()
+  screen.getByText('Ingreso de stock').focus()
+  act(() => screen.getByText('Fuera').focus())
+
+  expect(screen.queryByText('Ingreso de stock')).not.toBeInTheDocument()
+})
+
+it('valida e ingresa stock', async () => {
+  renderMenu()
+  fireEvent.click(screen.getByText('Ingreso de stock'))
+  fireEvent.change(screen.getByLabelText('Producto'), {
+    target: { value: 'p' },
+  })
+
+  for (const value of ['0', 'abc']) {
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value } })
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'Ingresar stock' }).closest('form')!
+    )
+    expect(m.stock).not.toHaveBeenCalled()
+  }
+
+  fireEvent.change(screen.getByLabelText('Cantidad'), {
+    target: { value: '15' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Ingresar stock' }))
+
+  await waitFor(() => expect(m.stock).toHaveBeenCalledWith('p', 15, null))
+  expect(m.refresh).toHaveBeenCalled()
+})
+
+it('lista las 30 ventas con hora y total formateados', async () => {
+  const filas = await abrirVentas()
+
+  expect(filas).toHaveLength(30)
+  expect(filas[0]).toHaveTextContent(/09:00.*₲ 1\.000 · Tarjeta · Ana/)
+})
+
+it('no permite anular una venta ya anulada', async () => {
+  const filas = await abrirVentas()
+
+  expect(within(filas[0]).getByText('Anulada')).toBeInTheDocument()
+  expect(
+    within(filas[0]).queryByRole('button', { name: 'Anular' })
+  ).not.toBeInTheDocument()
+})
+
+it('anula con motivo y actualiza específicamente la fila', async () => {
+  const filas = await abrirVentas()
+  fireEvent.click(within(filas[1]).getByRole('button', { name: 'Anular' }))
+  const confirmar = screen.getByRole('button', { name: 'Confirmar anulación' })
+  expect(confirmar).toBeDisabled()
+  fireEvent.change(screen.getByLabelText('Motivo'), {
+    target: { value: 'Error' },
+  })
+  fireEvent.click(confirmar)
+
+  await waitFor(() => expect(m.anular).toHaveBeenCalledWith('1', 'Error'))
+  await waitFor(() =>
+    expect(within(filas[1]).getByText('Anulada')).toBeInTheDocument()
+  )
+  expect(
+    within(filas[1]).queryByRole('button', { name: 'Anular' })
+  ).not.toBeInTheDocument()
+  expect(m.refresh).toHaveBeenCalled()
+})
+
+it('ofrece exactamente los tipos de cada sentido', () => {
+  abrirMovimiento()
+  const tipo = screen.getByLabelText('Tipo')
+
+  expect(
+    within(tipo)
+      .getAllByRole('option')
+      .map((o) => o.textContent)
+  ).toEqual(['Retiro de dueño', 'Pago a proveedor', 'Otro egreso'])
+  fireEvent.change(screen.getByLabelText('Sentido'), {
+    target: { value: 'entrada' },
+  })
+  expect(
+    within(tipo)
+      .getAllByRole('option')
+      .map((o) => o.textContent)
+  ).toEqual(['Aporte de cambio', 'Otro ingreso'])
+})
+
+it('requiere un motivo no vacío', () => {
+  abrirMovimiento()
+  fireEvent.change(screen.getByLabelText('Monto'), {
+    target: { value: '100' },
+  })
+  const boton = screen.getByRole('button', { name: 'Registrar movimiento' })
+
+  for (const value of ['', '   ']) {
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value } })
+    expect(boton).toBeDisabled()
+    fireEvent.submit(boton.closest('form')!)
+    expect(m.movimiento).not.toHaveBeenCalled()
+  }
+})
+
+it('registra el pago a proveedor en guaraníes', async () => {
+  abrirMovimiento()
+  fireEvent.change(screen.getByLabelText('Tipo'), {
+    target: { value: 'pago_proveedor' },
+  })
+  fireEvent.change(screen.getByLabelText('Moneda'), {
+    target: {
+      value: (screen.getByRole('option', { name: '₲' }) as HTMLOptionElement)
+        .value,
+    },
+  })
+  fireEvent.change(screen.getByLabelText('Monto'), {
+    target: { value: '150.000' },
+  })
+  fireEvent.change(screen.getByLabelText('Motivo'), {
+    target: { value: 'Hielo' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Registrar movimiento' }))
+
+  await waitFor(() =>
+    expect(m.movimiento).toHaveBeenCalledWith({
+      sentido: 'salida',
+      tipo: 'pago_proveedor',
+      moneda: 'PYG',
+      monto: 150000,
+      motivo: 'Hielo',
+    })
+  )
+  expect(m.refresh).toHaveBeenCalled()
+})
+
+it('registra reales con monto decimal', async () => {
+  abrirMovimiento()
+  fireEvent.change(screen.getByLabelText('Moneda'), {
+    target: {
+      value: (screen.getByRole('option', { name: 'R$' }) as HTMLOptionElement)
+        .value,
+    },
+  })
+  fireEvent.change(screen.getByLabelText('Monto'), {
+    target: { value: '50,5' },
+  })
+  fireEvent.change(screen.getByLabelText('Motivo'), {
+    target: { value: 'Cambio' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Registrar movimiento' }))
+
+  await waitFor(() =>
+    expect(m.movimiento).toHaveBeenCalledWith({
+      sentido: 'salida',
+      tipo: 'retiro',
+      moneda: 'BRL',
+      monto: 50.5,
+      motivo: 'Cambio',
+    })
+  )
+})
+
+it('abre cierre de turno', async () => {
+  renderMenu()
+  fireEvent.click(screen.getByText('Cerrar turno'))
+
+  expect(
+    screen.getByRole('dialog', { name: 'Cerrar turno' })
+  ).toBeInTheDocument()
+  expect(await screen.findByText('Conteo ciego')).toBeInTheDocument()
+})
