@@ -325,6 +325,9 @@ isOneToOne: false
 "ajustar_stock":
 { Args: { "p_cantidad": number,"p_motivo": string,"p_producto_id": string }; Returns: number
                            },
+"anular_venta":
+{ Args: { "p_motivo": string,"p_venta_id": string }; Returns: undefined
+                           },
 "cerrar_turno":
 { Args: { "p_contado_brl": number,"p_contado_gs": number,"p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]
                           SetofOptions: {
@@ -367,6 +370,11 @@ isOneToOne: false
 "registrar_movimiento_caja":
 { Args: { "p_moneda": Database["public"]['Enums']["moneda"],"p_monto": number,"p_motivo": string,"p_sentido": Database["public"]['Enums']["sentido_caja"],"p_tipo": Database["public"]['Enums']["tipo_mov_caja"] }; Returns: string
                            },
+"registrar_venta":
+{ Args: { "p_clave": string,"p_items": Json,"p_medio": Database["public"]['Enums']["medio_pago"],"p_monto_recibido"?: number }; Returns: {
+              "cotizacion": number,"equivalente_gs": number,"total_gs": number,"venta_id": string,"vuelto_gs": number
+            }[]
+                           },
 "resumen_turno":
 { Args: { "p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]
                           SetofOptions: {
@@ -381,6 +389,11 @@ isOneToOne: false
 "turno_actual":
 { Args: Record<PropertyKey, never>; Returns: {
               "abierto_at": string,"empleado_id": string,"empleado_nombre": string,"id": string
+            }[]
+                           },
+"ventas_del_turno":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "created_at": string,"empleado_nombre": string,"estado": Database["public"]['Enums']["estado_venta"],"id": string,"medio": Database["public"]['Enums']["medio_pago"],"total_gs": number
             }[]
                            }
           }
