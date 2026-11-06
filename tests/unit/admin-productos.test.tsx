@@ -14,7 +14,7 @@ it('convierte precio, costo vacío y bloquea doble envío', async () => {
   fireEvent.change(screen.getByLabelText('Precio'), { target: { value: '8.000' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar' })); fireEvent.submit(screen.getByRole('button', { name: 'Guardando…' }).closest('form')!)
   await waitFor(() => expect(m.crear).toHaveBeenCalledTimes(1))
-  expect(m.crear.mock.calls[0][0]).toMatchObject({ precioGs: 8000, costoGs: null })
+  expect(m.crear.mock.calls[0][0]).toMatchObject({ precioGs: 8000, costoGs: null, controlaStock: true })
 })
 it('muestra error para precio decimal', () => {
   m.crear.mockClear(); render(<FormProducto categorias={[{ id, nombre: 'Comida' }]} />)
@@ -38,4 +38,15 @@ it('espera la subida de la foto antes de guardar su ruta', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
   await waitFor(() => expect(m.crear).toHaveBeenCalledOnce())
   expect(m.crear.mock.calls[0][0].fotoPath).toMatch(/^productos\/.*\.png$/)
+})
+
+it('permite desactivar el control de stock al crear', async () => {
+  m.crear.mockReset().mockResolvedValue({ ok: true })
+  render(<FormProducto categorias={[{ id, nombre: 'Comida' }]} />)
+  fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Pan' } })
+  fireEvent.change(screen.getByLabelText('Precio'), { target: { value: '8000' } })
+  fireEvent.click(screen.getByLabelText('Controla stock'))
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+  await waitFor(() => expect(m.crear).toHaveBeenCalledOnce())
+  expect(m.crear.mock.calls[0][0].controlaStock).toBe(false)
 })

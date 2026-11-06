@@ -17,7 +17,7 @@ export function FormProducto({ categorias, producto, onGuardado }: { categorias:
   const [categoriaId, setCategoria] = useState(producto?.categoriaId ?? categorias[0]?.id ?? '')
   const [precio, setPrecio] = useState(producto ? String(producto.precioGs) : '')
   const [costo, setCosto] = useState(producto?.costoGs != null ? String(producto.costoGs) : '')
-  const [controlaStock, setControlaStock] = useState(producto?.controlaStock ?? false)
+  const [controlaStock, setControlaStock] = useState(producto?.controlaStock ?? true)
   const [visible, setVisible] = useState(producto?.visible ?? true)
   const [fotoPath, setFoto] = useState<string | null>(producto?.fotoPath ?? null)
   const [subiendoFoto, setSubiendoFoto] = useState(false)

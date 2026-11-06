@@ -6,6 +6,10 @@ export function formatoGs(n: number): string {
   return `₲ ${agrupar(Math.round(n).toString())}`
 }
 
+export function formatoTasa(n: number): string {
+  return `₲ ${n.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 export function formatoBrl(n: number): string {
   if (!Number.isFinite(n)) return `R$ ${n.toFixed(2)}`
   const centavos = decimalesAEntero(n, 2)

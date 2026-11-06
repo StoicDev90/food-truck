@@ -1,9 +1,9 @@
 import { requerirAcceso } from '@/lib/auth/sesion'
 import { crearClienteServidor } from '@/lib/supabase/server'
 import { formatoFechaHora, hoyPy } from '@/lib/admin/fechas'
+import { formatoTasa } from '@/lib/pos/formato'
 import { FormCotizacion } from '@/components/admin/FormCotizacion'
 
-const formatoTasa = (n: number) => `₲ ${n.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 export default async function Page() {
   await requerirAcceso('admin')
   const hoy = hoyPy()

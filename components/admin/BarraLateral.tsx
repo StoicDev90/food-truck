@@ -40,7 +40,7 @@ export function NavegacionAdmin({ nombre }: { nombre: string }) {
     <header className="flex min-h-14 items-center gap-3 border-b border-border px-4 lg:hidden">
       <Dialog open={abierto} onOpenChange={setAbierto}>
         <DialogTrigger aria-label="Abrir menú" className="inline-flex size-11 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"><Menu aria-hidden="true" /></DialogTrigger>
-        <DialogContent showCloseButton={false} className="dark fixed inset-y-0 left-0 top-0 h-dvh w-72 max-w-[85vw] translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none bg-sidebar p-0 text-sidebar-foreground">
+        <DialogContent showCloseButton={false} className="dark fixed inset-y-0 left-0 top-0 block h-dvh max-h-dvh w-72 max-w-[85vw] translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none bg-sidebar p-0 text-sidebar-foreground">
           <DialogTitle className="sr-only">Menú del panel de dueños</DialogTitle>
           <DialogClose aria-label="Cerrar menú" className="absolute right-2 top-2 inline-flex size-11 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-sidebar-ring"><X aria-hidden="true" /></DialogClose>
           <BarraLateral nombre={nombre} alNavegar={() => setAbierto(false)} />

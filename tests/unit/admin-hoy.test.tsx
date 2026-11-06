@@ -41,12 +41,12 @@ it('usa los datos de hoy, el primer cierre cerrado y la cotización manual', asy
     reporte_cierres: [{ cerrado_at: null }, { cerrado_at: '2026-11-06T12:00:00Z', fecha: '2026-11-06', empleado_nombre: 'Ana', diferencia_gs: '-5000', diferencia_brl: null }],
     turno_actual: [{ empleado_nombre: 'Juan', abierto_at: '2026-11-06T10:00:00Z' }],
   } as Record<string, unknown>)[name] }))
-  m.from.mockImplementation((tabla: string) => ({ select: () => tabla === 'cotizaciones' ? { eq: () => ({ maybeSingle: async () => ({ data: { valor_manual: 1500, valor_api: 1400 }, error: null }) }) } : Promise.resolve({ data: [{ id: 'p', nombre: 'Coxinha', stock: 0, controla_stock: true, activo: true }], error: null }) }))
+  m.from.mockImplementation((tabla: string) => ({ select: () => tabla === 'cotizaciones' ? { eq: () => ({ maybeSingle: async () => ({ data: { valor_manual: 1450.5, valor_api: 1400 }, error: null }) }) } : Promise.resolve({ data: [{ id: 'p', nombre: 'Coxinha', stock: 0, controla_stock: true, activo: true }], error: null }) }))
   render(await Page())
   expect(m.rpc).toHaveBeenCalledWith('reporte_ventas', { p_desde: '2026-11-06', p_hasta: '2026-11-06' })
   expect(m.rpc).toHaveBeenCalledWith('reporte_cierres', { p_desde: '2026-10-31', p_hasta: '2026-11-06' })
   expect(screen.getByText(/Turno abierto: Juan desde/)).toBeInTheDocument()
-  expect(screen.getByText('Cotización: ₲ 1.500 (manual)')).toBeInTheDocument()
+  expect(screen.getByText('Cotización: ₲ 1.450,50 (manual)')).toBeInTheDocument()
   expect(screen.getByText('+ R$ 20,00 (≈ ₲ 31.000)')).toBeInTheDocument()
   expect(screen.getByText('sin costo')).toBeInTheDocument()
   expect(screen.getByText('Cierre de 2026-11-06 (Ana): faltan ₲ 5.000')).toBeInTheDocument()
