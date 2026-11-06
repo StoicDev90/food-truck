@@ -11,10 +11,11 @@ export function SubirImagen({ carpeta, valor, onChange, onUploadingChange }: { c
   async function subir(file: File) {
     const extensiones: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
     const ext = extensiones[file.type]
-    if (!ext || file.size > 2 * 1024 * 1024) { setError('Elegí una imagen JPEG, PNG o WebP de hasta 2 MB.'); return }
+    if (!ext) { setError('Elegí una imagen JPEG, PNG o WebP de hasta 2 MB.'); return }
     setError(''); setSubiendo(true); onUploadingChange?.(true)
     try {
       const imagen = await achicarImagen(file)
+      if (imagen.size > 2 * 1024 * 1024) { setError('Elegí una imagen JPEG, PNG o WebP de hasta 2 MB.'); return }
       const extension = imagen === file ? ext : 'webp'
       const path = `${carpeta}/${crypto.randomUUID()}.${extension}`
       const { error } = await crearClienteNavegador().storage.from('imagenes').upload(path, imagen)

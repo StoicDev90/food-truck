@@ -20,3 +20,7 @@ describe('seccionActiva', () => {
     expect(seccionActiva([], 140)).toBeUndefined()
   })
 })
+
+it('elige la última sección al llegar al final de la página', () => {
+  expect(seccionActiva([{ id: 'a', top: -50 }, { id: 'b', top: 200 }], 144, true)).toBe('b')
+})

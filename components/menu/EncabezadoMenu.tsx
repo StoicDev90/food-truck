@@ -27,7 +27,7 @@ export function EncabezadoMenu({ menu }: { menu: DatosMenu }) {
     <div ref={sentinela} aria-hidden="true" className="h-px" />
     <div className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
       <div className="mx-auto max-w-2xl">
-        {compacto && <div className="flex h-14 items-center gap-2 px-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"><Palmera size={36} /><span className="flex-1 font-heading text-lg font-semibold text-marca">{menu.nombre}</span><BotonTema /></div>}
+        <div aria-hidden={!compacto} inert={!compacto} className={`${compacto ? "visible" : "invisible"} flex h-14 items-center gap-2 px-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150`}><Palmera size={36} /><span className="flex-1 font-heading text-lg font-semibold text-marca">{menu.nombre}</span><BotonTema /></div>
         <PestanasMenu secciones={menu.secciones} />
       </div>
     </div>
