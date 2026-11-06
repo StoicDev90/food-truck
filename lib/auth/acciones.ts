@@ -1,10 +1,20 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { crearClienteServidor } from '@/lib/supabase/server'
 import { emailDeUsuario, validarPin, validarUsuario } from './empleado'
 import { resolverAcceso, type Seccion } from './acceso'
 import { obtenerPerfil } from './sesion'
+import {
+  claveCuentaDueno,
+  claveCuentaEmpleado,
+  estaBloqueado,
+  ipDeEncabezados,
+  limpiarFallos,
+  MENSAJE_BLOQUEO,
+  registrarFallo,
+} from './limite-login'
 
 export type EstadoLogin = { error: string | null }
 
@@ -19,12 +29,20 @@ export async function loginEmpleado(_prev: EstadoLogin, fd: FormData): Promise<E
   const pin = campo(fd, 'pin')
   if (!validarUsuario(usuario) || !validarPin(pin)) return error
 
+  const cuenta = claveCuentaEmpleado(usuario)
+  const ip = ipDeEncabezados(await headers())
+  if (await estaBloqueado(cuenta, ip)) return { error: MENSAJE_BLOQUEO }
+
   const supabase = await crearClienteServidor()
   const { error: e } = await supabase.auth.signInWithPassword({
     email: emailDeUsuario(usuario),
     password: pin,
   })
-  if (e) return error
+  if (e) {
+    await registrarFallo(cuenta, ip)
+    return error
+  }
+  await limpiarFallos(cuenta)
 
   const perfil = await obtenerPerfil()
   if (!perfil || resolverAcceso(perfil, 'pos') === 'login') {
@@ -35,12 +53,21 @@ export async function loginEmpleado(_prev: EstadoLogin, fd: FormData): Promise<E
 }
 
 export async function loginDueno(_prev: EstadoLogin, fd: FormData): Promise<EstadoLogin> {
+  const email = campo(fd, 'email').trim()
+  const cuenta = claveCuentaDueno(email)
+  const ip = ipDeEncabezados(await headers())
+  if (await estaBloqueado(cuenta, ip)) return { error: MENSAJE_BLOQUEO }
+
   const supabase = await crearClienteServidor()
   const { error: e } = await supabase.auth.signInWithPassword({
-    email: campo(fd, 'email').trim(),
+    email,
     password: campo(fd, 'password'),
   })
-  if (e) return { error: 'Email o contraseña incorrectos' }
+  if (e) {
+    await registrarFallo(cuenta, ip)
+    return { error: 'Email o contraseña incorrectos' }
+  }
+  await limpiarFallos(cuenta)
 
   const perfil = await obtenerPerfil()
   if (!perfil || resolverAcceso(perfil, 'admin') === 'login') {

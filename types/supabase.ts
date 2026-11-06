@@ -97,6 +97,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"intentos_login": {
+                  Row: {
+                    "bloqueado_hasta": string | null,"clave": string,"fallos": number,"ultimo_fallo": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bloqueado_hasta"?: string | null,"clave": string,"fallos"?: number,"ultimo_fallo"?: string | null
+                  }
+                  Update: {
+                    "bloqueado_hasta"?: string | null,"clave"?: string,"fallos"?: number,"ultimo_fallo"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"movimientos_caja": {
                   Row: {
                     "created_at": string,"id": string,"moneda": Database["public"]['Enums']["moneda"],"monto": number,"motivo": string,"sentido": Database["public"]['Enums']["sentido_caja"],"tipo": Database["public"]['Enums']["tipo_mov_caja"],"turno_id": string,"usuario_id": string
@@ -308,6 +322,9 @@ isOneToOne: false
             "_aplicar_mov_stock":
 { Args: { "p_cantidad": number,"p_motivo": string,"p_producto_id": string,"p_tipo": Database["public"]['Enums']["tipo_mov_stock"],"p_venta_id": string }; Returns: number
                            },
+"_contar_fallo_login":
+{ Args: { "p_bloqueo": string,"p_clave": string,"p_umbral": number }; Returns: undefined
+                           },
 "_probe_default_acl":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -361,8 +378,17 @@ isOneToOne: false
               "fondo_brl": number,"fondo_gs": number
             }[]
                            },
+"limpiar_fallos_login":
+{ Args: { "p_cuenta": string }; Returns: undefined
+                           },
+"login_bloqueado":
+{ Args: { "p_cuenta": string,"p_ip": string }; Returns: boolean
+                           },
 "registrar_cotizacion_api":
 { Args: { "p_fecha": string,"p_fuente": string,"p_valor": number }; Returns: undefined
+                           },
+"registrar_fallo_login":
+{ Args: { "p_cuenta": string,"p_ip": string }; Returns: undefined
                            },
 "registrar_ingreso_stock":
 { Args: { "p_cantidad": number,"p_motivo"?: string,"p_producto_id": string }; Returns: number
