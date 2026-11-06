@@ -4,12 +4,12 @@ import { updateTag } from 'next/cache'
 import { unstable_rethrow } from 'next/navigation'
 import { requerirAcceso } from '@/lib/auth/sesion'
 import { crearClienteServidor } from '@/lib/supabase/server'
-import { codigoDeError, MENSAJES_ERROR, type CodigoError } from '@/lib/errores'
+import { codigoDeError } from '@/lib/errores'
+import { fallo, invalido, enteroValido, montoValido, uuidValido, motivoValido, type Resultado } from '@/lib/acciones/resultado'
 import { TAG_MENU } from '@/lib/cache'
 import type { MedioPago } from './cobro'
 import type { Database } from '@/types/supabase'
 
-export type Resultado<T> = { ok: true; data: T } | { ok: false; error: string; codigo: CodigoError | null }
 export type ResumenCaja = {
   fondoGs: number
   fondoBrl: number
@@ -29,13 +29,6 @@ export type ResumenCaja = {
   tarjetasGs: number
 }
 type VentaTurno = { id: string; createdAt: string; totalGs: number; medio: MedioPago; estado: 'confirmada' | 'anulada'; empleadoNombre: string }
-
-const fallo = (codigo: CodigoError | null): Resultado<never> => ({ ok: false, codigo, error: codigo ? MENSAJES_ERROR[codigo] : 'No se pudo completar. Probá de nuevo.' })
-const invalido = () => fallo('VALOR_INVALIDO')
-const montoValido = (n: number) => Number.isFinite(n) && n >= 0
-const enteroValido = (n: number) => Number.isSafeInteger(n) && n >= 0
-const uuidValido = (s: string) => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
-const motivoValido = (s: string) => typeof s === 'string' && s.trim().length > 0
 
 type EntradaVenta = { clave: string; items: { producto_id: string; cantidad: number }[]; medio: MedioPago; montoRecibido: number | null }
 
