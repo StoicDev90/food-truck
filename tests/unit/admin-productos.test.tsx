@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 const m = vi.hoisted(() => ({ crear: vi.fn(), upload: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('@/lib/admin/catalogo', () => ({ crearProducto: m.crear, editarProducto: vi.fn() }))
+vi.mock('@/lib/imagenes-navegador', () => ({ achicarImagen: async (archivo: File) => archivo }))
 vi.mock('@/lib/supabase/client', () => ({ crearClienteNavegador: () => ({ storage: { from: () => ({ upload: m.upload }) } }) }))
 import { FormProducto } from '@/components/admin/FormProducto'
 afterEach(cleanup)

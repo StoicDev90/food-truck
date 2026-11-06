@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { crearClienteNavegador } from '@/lib/supabase/client'
 import { urlImagen } from '@/lib/imagenes'
+import { achicarImagen } from '@/lib/imagenes-navegador'
 
 export function SubirImagen({ carpeta, valor, onChange, onUploadingChange }: { carpeta: 'productos' | 'marca'; valor: string | null; onChange: (path: string | null) => void; onUploadingChange?: (subiendo: boolean) => void }) {
   const [error, setError] = useState('')
@@ -13,8 +14,10 @@ export function SubirImagen({ carpeta, valor, onChange, onUploadingChange }: { c
     if (!ext || file.size > 2 * 1024 * 1024) { setError('Elegí una imagen JPEG, PNG o WebP de hasta 2 MB.'); return }
     setError(''); setSubiendo(true); onUploadingChange?.(true)
     try {
-      const path = `${carpeta}/${crypto.randomUUID()}.${ext}`
-      const { error } = await crearClienteNavegador().storage.from('imagenes').upload(path, file)
+      const imagen = await achicarImagen(file)
+      const extension = imagen === file ? ext : 'webp'
+      const path = `${carpeta}/${crypto.randomUUID()}.${extension}`
+      const { error } = await crearClienteNavegador().storage.from('imagenes').upload(path, imagen)
       if (error) { setError('No se pudo subir la imagen. Probá de nuevo.'); return }
       onChange(path)
     } catch { setError('No se pudo subir la imagen. Probá de nuevo.') } finally { setSubiendo(false); onUploadingChange?.(false) }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const m = vi.hoisted(() => ({ acceso: vi.fn(), from: vi.fn(), tag: vi.fn(), refresh: vi.fn(), upload: vi.fn() }))
 vi.mock('@/lib/auth/sesion', () => ({ requerirAcceso: m.acceso }))
 vi.mock('@/lib/supabase/server', () => ({ crearClienteServidor: async () => ({ from: m.from }) }))
+vi.mock('@/lib/imagenes-navegador', () => ({ achicarImagen: async (archivo: File) => archivo }))
 vi.mock('@/lib/supabase/client', () => ({ crearClienteNavegador: () => ({ storage: { from: () => ({ upload: m.upload }) } }) }))
 vi.mock('next/cache', () => ({ updateTag: m.tag }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: m.refresh }), unstable_rethrow: () => {} }))
