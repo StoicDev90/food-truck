@@ -491,3 +491,47 @@ expect(resolverAcceso({ rol: 'dueno', activo: false }, 'admin')).toBe('login')
   - `/pos` sin sesión → `/pos/login`; el dueño también entra a `/pos`.
   - Cerrar sesión vuelve al login de su sección.
 - [ ] **Step 7: Commit** `git commit -m "feat(auth): login de dueños y empleados, guards de /pos y /admin"`
+
+---
+
+### Task 9: Límite de intentos de login (spec §9)
+
+Agregada tras la review de Task 8: PIN de 6 dígitos sin límite = fuerza bruta, y el límite de Supabase cuenta por IP del servidor (Vercel) = un atacante bloquea a todos los empleados. Decisión de los dueños: arreglarlo en Plan 1.
+
+**Files:**
+- Create: `supabase/migrations/20261106120000_limite_login.sql`, `lib/auth/limite-login.ts`, `tests/db/limite-login.test.ts`, `tests/unit/limite-login.test.ts`
+- Modify: `lib/auth/acciones.ts`, `types/supabase.ts` (regenerar), `supabase/config.toml` (`[auth.rate_limit] sign_in_sign_ups = 300`), `eslint.config.mjs` (agregar `.claude/**` y `.agents/**` a `globalIgnores`, para que `npm run lint` pase)
+
+**Interfaces:**
+- Consumes: `crearClienteAdmin` (Task 8), `normalizarUsuario` (Task 1), `loginEmpleado`/`loginDueno` (Task 8)
+- Produces (SQL, todas `security definer`, `set search_path = ''`, `revoke execute ... from public, anon, authenticated`, `grant execute ... to service_role` únicamente):
+  - Tabla `public.intentos_login(clave text primary key, fallos int not null default 0, ultimo_fallo timestamptz, bloqueado_hasta timestamptz)`. RLS habilitada, **sin políticas**, `revoke all ... from anon, authenticated`.
+  - `login_bloqueado(p_cuenta text, p_ip text) returns boolean` — true si la fila `p_cuenta` o la fila `p_ip` tiene `bloqueado_hasta > now()`.
+  - `registrar_fallo_login(p_cuenta text, p_ip text) returns void` — para cada clave (atómico, `insert ... on conflict do update`): si `ultimo_fallo` es más viejo que 15 min, el conteo reinicia en 1; si no, `fallos + 1`; `ultimo_fallo = now()`. Al llegar al umbral: `bloqueado_hasta = now() + duración`, `fallos = 0`. Umbrales: cuenta 5 fallos → 5 min; IP 20 fallos → 15 min.
+  - `limpiar_fallos_login(p_cuenta text) returns void` — borra la fila de la cuenta (no toca la de IP).
+- Produces (TS, `lib/auth/limite-login.ts`, `import 'server-only'`):
+  - `claveCuentaEmpleado(usuario: string): string` → `'usuario:' + normalizarUsuario(usuario)`; `claveCuentaDueno(email: string): string` → `'email:' + email.trim().toLowerCase()`
+  - `ipDeEncabezados(h: Headers): string` → `'ip:' + ` primer valor de `x-forwarded-for` (trim), si no `x-real-ip`, si no `'desconocida'`
+  - `MENSAJE_BLOQUEO = 'Demasiados intentos fallidos. Esperá unos minutos y volvé a probar.'`
+  - `estaBloqueado(cuenta, ip): Promise<boolean>`, `registrarFallo(cuenta, ip): Promise<void>`, `limpiarFallos(cuenta): Promise<void>` — vía `crearClienteAdmin().rpc(...)`; si el rpc devuelve error, **lanzan** (fail-closed).
+  - Las funciones puras (`claveCuenta*`, `ipDeEncabezados`) pueden vivir en un archivo sin `server-only` si hace falta para testearlas; decisión del implementer.
+- Flujo en `loginEmpleado` (`loginDueno` igual, con `claveCuentaDueno` y sus mensajes):
+  1. Formato inválido → error de siempre, **sin** contar (no llega a Supabase).
+  2. `estaBloqueado` → `{ error: MENSAJE_BLOQUEO }`, sin llamar a `signInWithPassword`.
+  3. `signInWithPassword` falla → `registrarFallo(cuenta, ip)` → error de siempre.
+  4. Éxito → `limpiarFallos(cuenta)` → chequeo de perfil como hoy (perfil inactivo / rol incorrecto no cuenta como fallo).
+
+- [ ] **Step 1: Tests que fallan.** `tests/db/limite-login.test.ts` (claves únicas por test, p.ej. `usuario:t_<uuid>`):
+  - 4 fallos de cuenta → `login_bloqueado` false; 5.º → true.
+  - Bloqueo de cuenta no bloquea otra cuenta desde otra IP.
+  - 20 fallos desde la misma IP con cuentas distintas → `login_bloqueado(<cuenta nueva>, ip)` true.
+  - `limpiar_fallos_login` tras 3 fallos → 2 fallos más no bloquean.
+  - Ventana: 4 fallos, luego `admin.from('intentos_login').update({ ultimo_fallo: <hace 16 min> })`, 1 fallo más → no bloqueado.
+  - Vencimiento: `bloqueado_hasta` en el pasado → false.
+  - `anon` y un empleado logueado: `rpc` de las 3 funciones → error `42501`; `select` de `intentos_login` → error o `[]` (sin filas aunque haya datos sembrados).
+  - `tests/unit/limite-login.test.ts`: `claveCuentaEmpleado(' Pepe ')` → `'usuario:pepe'`; `claveCuentaDueno(' A@B.com ')` → `'email:a@b.com'`; `ipDeEncabezados` con `x-forwarded-for: '1.2.3.4, 10.0.0.1'` → `'ip:1.2.3.4'`, solo `x-real-ip: '5.6.7.8'` → `'ip:5.6.7.8'`, ninguno → `'ip:desconocida'`.
+- [ ] **Step 2: Run** `npm run test:db -- limite-login` y `npm test -- limite-login` → FAIL.
+- [ ] **Step 3: Implementar** migración, `npm run db:types`, `lib/auth/limite-login.ts`, cambios en `acciones.ts`, `config.toml`, `eslint.config.mjs`.
+- [ ] **Step 4: Run** `npm test && npm run test:db && npm run typecheck && npm run lint && npm run build` → todo PASS.
+- [ ] **Step 5: Verificación manual** (`npm run dev` + curl o navegador): 5 PIN malos para un empleado → el 6.º intento, aun con PIN correcto, muestra `MENSAJE_BLOQUEO`; otro empleado sigue entrando. Volver a 0 con `limpiar_fallos_login` o borrando la fila.
+- [ ] **Step 6: Commit** `git commit -m "feat(auth): límite de intentos de login por cuenta e IP"`

@@ -106,6 +106,13 @@ Los dueños eligieron **A**.
 - Dueños: email + contraseña (Supabase Auth).
 - Empleados: usuario real de Supabase Auth creado por un dueño desde el panel (vía service role en Server Action). Entran con nombre de usuario + PIN de 6 dígitos (Supabase exige ≥ 6 caracteres). El email interno es sintético y no lo ve nadie **[call de Claude]**.
 - El dueño puede desactivar un empleado y resetear su PIN.
+- **Límite de intentos de login** (decisión de los dueños): un PIN de 6 dígitos sin límite se puede adivinar, y el límite propio de Supabase cuenta por IP del servidor (todas las peticiones salen de Vercel), así que un atacante podría bloquear a todos los empleados a la vez. Por eso el sistema lleva su propio contador, en la base, antes de llamar a Supabase Auth:
+  - Por cuenta (usuario del empleado o email del dueño): 5 fallos seguidos → esa cuenta queda bloqueada 5 minutos. Los fallos se olvidan si pasan 15 minutos sin otro fallo. Un login correcto pone el contador en cero.
+  - Por IP del cliente: 20 fallos → esa IP queda bloqueada 15 minutos (frena a quien prueba muchos usuarios).
+  - Bloqueado → no se consulta a Supabase y se muestra "Demasiados intentos fallidos. Esperá unos minutos y volvé a probar." El mismo mensaje para cuenta o IP, y se cuenta igual exista o no el usuario (no revela qué usuarios existen).
+  - El contador solo lo lee y escribe el servidor (service role); ni anon ni usuarios logueados pueden consultarlo, borrarlo ni llamar sus funciones.
+  - En producción, el límite `sign_in_sign_ups` de Supabase Auth se sube en el dashboard para que no sea él quien bloquee primero.
+  - Desbloqueo manual por un dueño: se agrega con la gestión de usuarios del panel (Plan 3); resetear el PIN también limpia el contador **[call de Claude]**.
 - RLS por rol en todas las tablas: el empleado solo lee lo necesario para operar y solo escribe a través de las funciones de base de datos listadas en §13.
 - El POS es instalable como PWA en la tablet/celular (manifest), sin modo offline. Si se pierde conexión, se muestra un aviso y no se permite confirmar ventas.
 
