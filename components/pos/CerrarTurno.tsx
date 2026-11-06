@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cerrarTurno, type ResumenCaja } from "@/lib/pos/acciones";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import {
@@ -29,6 +29,7 @@ export function CerrarTurno({
   const [brl, setBrl] = useState("0");
   const [error, setError] = useState("");
   const [pendiente, setPendiente] = useState(false);
+  const bloqueado = useRef(false);
   const [resumen, setResumen] = useState<ResumenCaja | null>(null);
   useEffect(() => {
     if (!resumen) return;
@@ -50,18 +51,26 @@ export function CerrarTurno({
   }, [resumen]);
   async function confirmar(e: React.FormEvent) {
     e.preventDefault();
+    if (bloqueado.current) return;
     const g = parseMontoGs(gs),
       b = parseMontoBrl(brl);
     if (g === null || b === null) {
       setError("Ingresá montos válidos.");
       return;
     }
+    bloqueado.current = true;
     setPendiente(true);
     setError("");
     try {
       const resultado = await cerrarTurno(turnoId, g, b);
       if (resultado.ok) setResumen(resultado.data);
-      else setError(resultado.error);
+      else {
+        bloqueado.current = false;
+        setError(resultado.error);
+      }
+    } catch (error) {
+      bloqueado.current = false;
+      throw error;
     } finally {
       setPendiente(false);
     }
@@ -85,7 +94,6 @@ export function CerrarTurno({
     : [];
   return (
     <section className="w-full max-w-2xl space-y-5">
-      <h2 className="font-heading text-2xl">Cerrar turno</h2>
       <p>Turno abierto: {abierto}</p>
       {!resumen ? (
         <form onSubmit={confirmar} className="space-y-4">

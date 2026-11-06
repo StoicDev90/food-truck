@@ -48,6 +48,17 @@ describe('turno', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Listo · cerrar sesión' }))
     expect(m.sesion).toHaveBeenCalledWith('pos')
   })
+  it('ignora dos envíos rápidos y muestra el resultado sin error', async () => {
+    let resolver!: (value: { ok: true; data: typeof resumen }) => void
+    m.cerrar.mockReturnValue(new Promise(resolve => { resolver = resolve }))
+    render(<CerrarTurno turnoId="t" abierto="hoy" onCerrar={vi.fn()} />)
+    const form = screen.getByRole('button', { name: /Confirmar/ }).closest('form')!
+    act(() => { fireEvent.submit(form); fireEvent.submit(form) })
+    expect(m.cerrar).toHaveBeenCalledTimes(1)
+    await act(async () => { resolver({ ok: true, data: resumen }) })
+    expect(screen.getByText('= Esperado')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
   it('muestra error de cierre sin avanzar', async () => {
     m.cerrar.mockResolvedValue({ ok: false, codigo: 'TURNO_CERRADO', error: 'Turno cerrado' })
     render(<CerrarTurno turnoId="t" abierto="hoy" onCerrar={vi.fn()} />)
