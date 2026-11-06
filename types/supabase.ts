@@ -305,7 +305,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "es_dueno":
+            "costos_productos":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "costo_gs": number,"producto_id": string
+            }[]
+                           },
+"es_dueno":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "rol_actual":

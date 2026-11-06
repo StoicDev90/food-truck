@@ -40,10 +40,9 @@ alter table public.correcciones_conteo enable row level security;
 alter table public.cotizaciones enable row level security;
 alter table public.configuracion enable row level security;
 
--- productos: costo_gs oculto a anon (authenticated activo lo ve); stock nunca escribible directo.
+-- productos: costo_gs no se lee por tabla (solo service_role / public.costos_productos()); stock nunca escribible directo.
 grant select (id, categoria_id, nombre, descripcion, foto_path, precio_gs, stock, controla_stock, visible, activo, created_at)
-  on public.productos to anon;
-grant select on public.productos to authenticated;
+  on public.productos to anon, authenticated;
 grant insert (categoria_id, nombre, descripcion, foto_path, precio_gs, costo_gs, controla_stock, visible, activo)
   on public.productos to authenticated;
 grant update (categoria_id, nombre, descripcion, foto_path, precio_gs, costo_gs, controla_stock, visible, activo)
@@ -100,3 +99,17 @@ create policy pagos_select on public.pagos for select to authenticated using (pu
 create policy movimientos_stock_select on public.movimientos_stock for select to authenticated using (public.es_dueno());
 create policy movimientos_caja_select on public.movimientos_caja for select to authenticated using (public.es_dueno());
 create policy correcciones_conteo_select on public.correcciones_conteo for select to authenticated using (public.es_dueno());
+
+-- costo unitario: solo dueño activo
+create function public.costos_productos() returns table (producto_id uuid, costo_gs int)
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if not public.es_dueno() then
+    raise exception 'NO_AUTORIZADO';
+  end if;
+  return query select p.id, p.costo_gs from public.productos p;
+end
+$$;
+revoke execute on function public.costos_productos() from public, anon;
+grant execute on function public.costos_productos() to authenticated, service_role;
