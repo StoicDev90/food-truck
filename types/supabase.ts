@@ -313,8 +313,20 @@ isOneToOne: false
               "costo_gs": number,"producto_id": string
             }[]
                            },
+"cotizacion_vigente":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "es_dueno":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"fecha_py":
+{ Args: { "ts"?: string }; Returns: string
+                           },
+"fijar_cotizacion_manual":
+{ Args: { "p_valor": number }; Returns: undefined
+                           },
+"registrar_cotizacion_api":
+{ Args: { "p_fecha": string,"p_fuente": string,"p_valor": number }; Returns: undefined
                            },
 "rol_actual":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol_usuario"]
