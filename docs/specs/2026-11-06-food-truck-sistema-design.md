@@ -197,6 +197,7 @@ Fórmulas (ventas anuladas excluidas):
 ### 11.1 Productos
 - Nombre, categoría, descripción, foto, precio ₲, stock actual (solo lectura, ver §11.2), interruptor visible/oculto en el menú público.
 - Costo unitario opcional. Si no se carga, los reportes no muestran ganancia para ese producto.
+- El costo lo ven **solo los dueños** (decisión de los dueños). Ni el menú público ni los empleados pueden leerlo, tampoco consultando la base de datos directamente.
 - Fotos en Supabase Storage (bucket público de lectura, escritura solo dueños).
 - Categorías administrables (nombre, orden).
 

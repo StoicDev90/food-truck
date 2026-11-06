@@ -171,11 +171,12 @@ expect(e).toBeNull()
 - Produces:
   - `public.rol_actual() returns public.rol_usuario` — `stable security definer`; rol de `auth.uid()` si `activo`, si no `null`. Grant a `authenticated`.
   - `public.es_dueno() returns boolean` — `rol_actual() = 'dueno'`. Grant a `authenticated`.
+  - `public.costos_productos() returns table(producto_id uuid, costo_gs int)` — `stable security definer`; solo dueño activo, si no `raise exception 'NO_AUTORIZADO'`. Grant a `authenticated`. Es la única vía de lectura de `costo_gs` para la app (spec §11.1: el costo lo ven solo los dueños).
   - Matriz de acceso (todas las tablas con RLS enabled):
 
 | Tabla | anon | empleado activo | dueño activo |
 |---|---|---|---|
-| productos | select de todas las columnas **excepto `costo_gs`**, solo `visible and activo` | select | select; insert/update de todas las columnas **excepto `stock`** |
+| productos | select de todas las columnas **excepto `costo_gs`**, solo `visible and activo` | select de todas las columnas **excepto `costo_gs`** | select (sin `costo_gs`, que se lee con `costos_productos()`); insert/update de todas las columnas **excepto `stock`** (incluye `costo_gs`) |
 | categorias, configuracion | select | select | select + escritura (categorías: insert/update/delete; configuración: update) |
 | cotizaciones | — | select | select |
 | perfiles | — | select de su propia fila | select |
