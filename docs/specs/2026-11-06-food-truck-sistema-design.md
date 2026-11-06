@@ -69,6 +69,7 @@ Los dueños eligieron **A**.
 - **POS y panel**: muestran ₲ y al lado el equivalente en R$, calculado con la cotización del día (no se guarda en productos).
 - **Pagos**: se guardan en la moneda en que entraron. Un pago en reales guarda el monto en R$ recibido, la cotización usada y su equivalente en ₲. Así la caja refleja billetes en ambas monedas y los reportes viejos no cambian.
 - **Cotización del día**: una tarea programada (Vercel Cron) toma una vez por día la cotización **oficial** (Banco Central del Paraguay o fuente oficial similar) y la guarda.
+  - Fuente: la tabla publicada del Banco Central del Paraguay (BCP), real → guaraní, leída vía la API de AllRatesToday (`ALLRATES_API_KEY`). La tarea corre a las 00:05 hora de Asunción y guarda como cotización del día la última publicada por el BCP (el BCP publica alrededor de las 18:08; fines de semana y feriados repite la última). Así el bloqueo de Efectivo R$ en un turno que pasa la medianoche dura solo de 00:00 hasta que corre la tarea (decisión de los dueños, 2026-11-06).
 - **Carga manual**: solo los dueños, logueados con su usuario y contraseña, pueden fijar a mano la cotización del día cuando lo requieran. La manual tiene prioridad sobre la de la API ese día. Los empleados nunca pueden cargarla.
 - **Si no hay cotización del día** (la API falló y ningún dueño la cargó a mano): el POS **bloquea el cobro en Efectivo R$** ese día y muestra el motivo. No se usa la cotización del día anterior. El equivalente en R$ del POS y el panel se muestra como "sin cotización". Los demás medios de pago siguen funcionando.
 - Unidad de cotización: ₲ por 1 R$.
@@ -272,5 +273,5 @@ Tras cada una que afecte el menú, `revalidateTag` del menú público.
 - Estructura de carpetas, nombres exactos de tablas/funciones, componentes shadcn a usar.
 - Diseño visual detallado siguiendo `web-design-guidelines` y las pautas UI/UX de `CLAUDE.md`.
 - Estrategia de tests (unitarios de cálculo de vuelto/cierre, integración de funciones Postgres contra Supabase local).
-- Proveedor concreto de la API de cotización oficial (BCP o fuente oficial similar) y horario del cron (propuesta: temprano a la mañana, hora de Asunción).
+- ~~Proveedor de la cotización y horario del cron~~: resuelto en §7.
 - Paginación y filtros de reportes; exportación (CSV) si es trivial.
