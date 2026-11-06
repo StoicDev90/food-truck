@@ -9,6 +9,10 @@ if (!email || !password || !nombre) {
   console.error('Uso: npx tsx scripts/crear-dueno.ts <email> <password> <nombre>')
   process.exit(1)
 }
+if (password.length < 12) {
+  console.error('La contraseña debe tener al menos 12 caracteres')
+  process.exit(1)
+}
 if (!url || !key) {
   console.error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el entorno')
   process.exit(1)

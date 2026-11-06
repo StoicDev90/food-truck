@@ -41,6 +41,12 @@ describe('esquema', () => {
     })
     expect(error).not.toBeNull()
   })
+
+  it('el registro público está deshabilitado', async () => {
+    const { error } = await anon.auth.signUp({
+      email: `x_${Date.now()}@test.local`,
+      password: 'una-clave-larga-123',
+    })
     expect(error).not.toBeNull()
   })
 })
