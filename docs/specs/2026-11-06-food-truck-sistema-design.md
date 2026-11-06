@@ -14,7 +14,7 @@ El sistema es una sola web con tres partes que comparten productos, precios y st
 2. **Punto de venta (POS)**: el único empleado del turno registra cada venta, cobra y cierra la caja.
 3. **Panel de los dueños**: cargan productos, precios y stock; controlan el dinero y sacan reportes.
 
-Nombre comercial pendiente entre: Oasis Itaipu, Crocante de Itaipu, La picada del Parque, Parador Silvestre, Rustico y Natural. El sistema debe tomar el nombre desde configuración, no hardcodeado.
+Nombre comercial: **Oasis Itaipu** (decidido por los dueños el 2026-11-06). El sistema igual toma el nombre desde configuración, no hardcodeado.
 
 ## 2. Objetivos
 
@@ -114,6 +114,9 @@ Los dueños eligieron **A**.
   - Una cuenta de empleado tiene un solo contador: el formulario de dueños rechaza los emails internos de empleados (`@empleados.local`) con el error genérico, sin consultar a Supabase ni al contador **[call de Claude, tras review]**.
   - El contador solo lo lee y escribe el servidor (service role); ni anon ni usuarios logueados pueden consultarlo, borrarlo ni llamar sus funciones.
   - En producción, el límite `sign_in_sign_ups` de Supabase Auth se sube en el dashboard para que no sea él quien bloquee primero.
+  - **El PIN nunca es la contraseña de Supabase.** La contraseña real del empleado en Supabase Auth es `HMAC-SHA256(EMPLEADO_PIN_PEPPER, usuario + ':' + PIN)` (base64url), calculada solo en el servidor con un secreto de entorno. Así, quien llame directo al endpoint público de Supabase Auth (`/auth/v1/token`) con la anon key no puede probar PINs de 6 dígitos sin conocer el secreto, y el contador de arriba no se puede saltear. Crear empleado y resetear PIN (Plan 3) usan la misma derivación. Cambiar el secreto obliga a resetear todos los PINs **[call de Claude, tras review final]**.
+  - Dueños: contraseña de al menos 12 caracteres (política de Supabase Auth y el script de alta).
+  - Registro público (signup) deshabilitado: los usuarios solo los crea el servidor (script de dueño, panel para empleados).
   - Desbloqueo manual por un dueño: se agrega con la gestión de usuarios del panel (Plan 3); resetear el PIN también limpia el contador **[call de Claude]**.
 - RLS por rol en todas las tablas: el empleado solo lee lo necesario para operar y solo escribe a través de las funciones de base de datos listadas en §13.
 - El POS es instalable como PWA en la tablet/celular (manifest), sin modo offline. Si se pierde conexión, se muestra un aviso y no se permite confirmar ventas.
@@ -241,7 +244,7 @@ Fórmulas (ventas anuladas excluidas):
 - `turnos` además guarda `cerrado_por` (para cierres forzados por un dueño).
 - `correcciones_conteo` (id, turno_id, dueno_id, contado_gs_anterior, contado_brl_anterior, contado_gs_nuevo, contado_brl_nuevo, motivo, created_at).
 - RLS: el empleado no puede leer los totales esperados de caja; el cálculo de lo esperado se expone solo al cerrar (en la respuesta de `cerrar_turno`) y a los dueños.
-- `cotizaciones` (fecha date pk, valor_api numeric null, valor_manual numeric null, fuente, actualizado_por, updated_at). Valor efectivo = manual ?? api ?? última conocida.
+- `cotizaciones` (fecha date pk, valor_api numeric null, valor_manual numeric null, fuente, actualizado_por, updated_at). Valor efectivo = manual ?? api (sin fallback a días anteriores, ver §7).
 - `configuracion` (fila única: nombre, logo_path, horarios jsonb, whatsapp, instagram, ubicacion)
 
 `productos.stock` es un valor derivado que solo actualizan las funciones de §13 al insertar movimientos.
@@ -262,7 +265,6 @@ Tras cada una que afecte el menú, `revalidateTag` del menú público.
 
 ## 14. Pendiente de los dueños
 
-- Nombre comercial definitivo (entre los cinco candidatos).
 - Identidad visual (logo, colores, tipografía, fotos de productos). Los dueños van a aportar fotos del truck; se define en un diseño visual aparte, que no cambia la arquitectura de este documento.
 
 ## 15. Queda a criterio del builder
