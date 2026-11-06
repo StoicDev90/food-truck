@@ -110,6 +110,8 @@ Los dueños eligieron **A**.
   - Por cuenta (usuario del empleado o email del dueño): 5 fallos seguidos → esa cuenta queda bloqueada 5 minutos. Los fallos se olvidan si pasan 15 minutos sin otro fallo. Un login correcto pone el contador en cero.
   - Por IP del cliente: 20 fallos → esa IP queda bloqueada 15 minutos (frena a quien prueba muchos usuarios).
   - Bloqueado → no se consulta a Supabase y se muestra "Demasiados intentos fallidos. Esperá unos minutos y volvé a probar." El mismo mensaje para cuenta o IP, y se cuenta igual exista o no el usuario (no revela qué usuarios existen).
+  - Cada intento se **reserva** (cuenta) en la base, en un solo paso atómico, **antes** de consultar a Supabase; si el login sale bien, esa reserva se devuelve. Así varios intentos simultáneos no pueden pasar el límite **[call de Claude, tras review]**.
+  - Una cuenta de empleado tiene un solo contador: el formulario de dueños rechaza los emails internos de empleados (`@empleados.local`) con el error genérico, sin consultar a Supabase ni al contador **[call de Claude, tras review]**.
   - El contador solo lo lee y escribe el servidor (service role); ni anon ni usuarios logueados pueden consultarlo, borrarlo ni llamar sus funciones.
   - En producción, el límite `sign_in_sign_ups` de Supabase Auth se sube en el dashboard para que no sea él quien bloquee primero.
   - Desbloqueo manual por un dueño: se agrega con la gestión de usuarios del panel (Plan 3); resetear el PIN también limpia el contador **[call de Claude]**.

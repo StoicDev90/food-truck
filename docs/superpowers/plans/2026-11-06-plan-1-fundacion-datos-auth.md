@@ -535,3 +535,18 @@ Agregada tras la review de Task 8: PIN de 6 dígitos sin límite = fuerza bruta,
 - [ ] **Step 4: Run** `npm test && npm run test:db && npm run typecheck && npm run lint && npm run build` → todo PASS.
 - [ ] **Step 5: Verificación manual** (`npm run dev` + curl o navegador): 5 PIN malos para un empleado → el 6.º intento, aun con PIN correcto, muestra `MENSAJE_BLOQUEO`; otro empleado sigue entrando. Volver a 0 con `limpiar_fallos_login` o borrando la fila.
 - [ ] **Step 6: Commit** `git commit -m "feat(auth): límite de intentos de login por cuenta e IP"`
+
+#### Task 9 — corrección tras review (reemplaza el flujo check → signIn → registrar)
+
+Motivo: (1) intentos simultáneos pasaban todos `login_bloqueado` antes de que se registrara ningún fallo; (2) el formulario de dueños daba un segundo contador a las cuentas de empleado (`email:pepe@empleados.local`).
+
+- SQL (se edita la migración `20261106120000_limite_login.sql` en su lugar; no está mergeada ni desplegada):
+  - `reservar_intento_login(p_cuenta text, p_ip text) returns boolean` reemplaza a `login_bloqueado` y `registrar_fallo_login`. Atómico (filas de ambas claves bloqueadas en orden fijo: cuenta, luego IP): si alguna tiene `bloqueado_hasta > now()` → devuelve `false` sin incrementar nada. Si no, cuenta el intento en ambas claves con las mismas reglas de ventana/umbral/bloqueo de antes y devuelve `true`.
+  - `limpiar_fallos_login(p_cuenta text, p_ip text) returns void` — borra la fila de la cuenta y en la IP hace `fallos = greatest(fallos - 1, 0)` (devuelve la reserva del login correcto; no levanta un bloqueo de IP).
+  - Mismos grants: solo `service_role`.
+- TS: `reservarIntento(cuenta, ip): Promise<boolean>`, `limpiarFallos(cuenta, ip): Promise<void>`; se eliminan `estaBloqueado`/`registrarFallo`. Fail-closed igual.
+- Flujo (ambas acciones): formato inválido → error genérico sin contar. En `loginDueno` es formato inválido también: email vacío, sin `@`, de más de 254 caracteres, o que termina en `@empleados.local` (usar el dominio de `lib/auth/empleado.ts`, no repetir el literal). → `reservarIntento` false → `MENSAJE_BLOQUEO` sin `signInWithPassword` → signIn falla → error genérico (el intento ya quedó contado) → éxito → `limpiarFallos(cuenta, ip)` → chequeo de perfil.
+- Tests nuevos/ajustados:
+  - DB: 10 `reservar_intento_login` en paralelo (`Promise.all`) para una cuenta nueva → exactamente 5 `true`; con cuenta bloqueada, `reservar` devuelve false y no incrementa (la fila no cambia); 19 intentos de IP no bloquean, el 20.º sí; duración del bloqueo: cuenta ≈ `now()+5 min`, IP ≈ `now()+15 min` (±1 min); `limpiar_fallos_login` borra la cuenta y resta 1 a la IP; tras vencer un bloqueo, el conteo arranca de nuevo; `42501` para anon y empleado en **todas** las funciones, incluida la interna.
+  - Unit: `loginDueno` con `pepe@empleados.local` → error genérico, sin limiter ni signIn; email > 254 → idem; `reservarIntento` false → sin signIn ni `limpiarFallos`; `reservarIntento` rechaza → la acción rechaza.
+- Commit: `fix(auth): reserva atómica de intentos y un solo contador por cuenta`
