@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { admin, anon, crearProducto, crearUsuario, limpiarOperaciones } from './helpers'
 
@@ -5,6 +6,22 @@ beforeEach(limpiarOperaciones)
 
 const precioDe = async (id: string) =>
   (await admin.from('productos').select('precio_gs').eq('id', id).single()).data!.precio_gs
+
+async function sembrar(empleadoId: string) {
+  const t = await admin.from('turnos').insert({ empleado_id: empleadoId }).select('id').single()
+  if (t.error) throw t.error
+  const v = await admin
+    .from('ventas')
+    .insert({ turno_id: t.data.id, empleado_id: empleadoId, total_gs: 1000, clave_idempotencia: randomUUID() })
+    .select('id')
+    .single()
+  if (v.error) throw v.error
+  const p = await admin
+    .from('pagos')
+    .insert({ venta_id: v.data.id, medio: 'efectivo_gs', moneda: 'PYG', monto_recibido: 1000, equivalente_gs: 1000 })
+  if (p.error) throw p.error
+  return { turnoId: t.data.id, ventaId: v.data.id }
+}
 
 describe('rls', () => {
   it('anon ve solo productos visibles y sin costo', async () => {
@@ -37,14 +54,30 @@ describe('rls', () => {
     expect(rc.error?.message).toContain('NO_AUTORIZADO')
     expect((await anon.rpc('costos_productos')).error).not.toBeNull()
     expect((await emp.client.from('productos').select('id, precio_gs')).data!.length).toBeGreaterThan(0)
-    for (const t of [
-      'pagos', 'turnos', 'ventas', 'venta_items', 'movimientos_stock', 'movimientos_caja', 'correcciones_conteo',
-    ] as const) {
+    const { turnoId, ventaId } = await sembrar(emp.id)
+    const d = await crearUsuario('dueno')
+    for (const t of ['turnos', 'ventas', 'pagos'] as const) {
+      expect((await admin.from(t).select()).data!.length).toBe(1)
+      expect((await d.client.from(t).select()).data!.length).toBe(1)
       expect((await emp.client.from(t).select()).data).toEqual([])
     }
-    expect((await emp.client.from('ventas').insert({} as never)).error).not.toBeNull()
-    expect((await emp.client.from('productos').insert({} as never)).error).not.toBeNull()
-    expect((await emp.client.from('categorias').insert({ nombre: 'x' })).error).not.toBeNull()
+    for (const t of ['venta_items', 'movimientos_stock', 'movimientos_caja', 'correcciones_conteo'] as const) {
+      expect((await emp.client.from(t).select()).error).toBeNull()
+    }
+    const { data: cat } = await admin.from('categorias').select('id').limit(1).single()
+    const iv = await emp.client
+      .from('ventas')
+      .insert({ turno_id: turnoId, empleado_id: emp.id, total_gs: 1, clave_idempotencia: randomUUID() })
+    expect(iv.error?.code).toBe('42501')
+    const ip = await emp.client
+      .from('productos')
+      .insert({ categoria_id: cat!.id, nombre: 'hack-emp', precio_gs: 1 })
+    expect(ip.error?.code).toBe('42501')
+    const ic = await emp.client.from('categorias').insert({ nombre: 'hack-cat' })
+    expect(ic.error?.code).toBe('42501')
+    expect((await admin.from('ventas').select('id')).data!.map((r) => r.id)).toEqual([ventaId])
+    expect((await admin.from('productos').select('id').eq('nombre', 'hack-emp')).data).toEqual([])
+    expect((await admin.from('categorias').select('id').eq('nombre', 'hack-cat')).data).toEqual([])
     await emp.client.from('configuracion').update({ nombre: 'hack' }).eq('id', 1)
     expect((await admin.from('configuracion').select('nombre').single()).data!.nombre).not.toBe('hack')
   })
@@ -77,7 +110,12 @@ describe('rls', () => {
     expect((await d.client.from('categorias').delete().eq('id', cat.data!.id)).error).toBeNull()
     expect((await d.client.from('configuracion').update({ nombre: 'Mi truck' }).eq('id', 1)).error).toBeNull()
     expect((await d.client.from('ventas').select()).error).toBeNull()
-    expect((await d.client.from('ventas').insert({} as never)).error).not.toBeNull()
+    const { turnoId } = await sembrar(d.id)
+    const iv = await d.client
+      .from('ventas')
+      .insert({ turno_id: turnoId, empleado_id: d.id, total_gs: 1, clave_idempotencia: randomUUID() })
+    expect(iv.error?.code).toBe('42501')
+    expect((await admin.from('ventas').select('id')).data).toHaveLength(1)
   })
 
   it('dueño desactivado no lee ni escribe', async () => {
@@ -87,7 +125,8 @@ describe('rls', () => {
     expect(await precioDe(p)).toBe(9000)
     expect((await dx.client.from('productos').select('id')).data).toEqual([])
     expect((await dx.client.from('perfiles').select()).data).toEqual([])
-    expect((await dx.client.from('categorias').insert({ nombre: 'z' })).error).not.toBeNull()
+    expect((await dx.client.from('categorias').insert({ nombre: 'z' })).error?.code).toBe('42501')
+    expect((await admin.from('categorias').select('id').eq('nombre', 'z')).data).toEqual([])
   })
 
   it('funciones auxiliares no son llamables por anon', async () => {
@@ -95,5 +134,12 @@ describe('rls', () => {
     const d = await crearUsuario('dueno')
     expect((await d.client.rpc('es_dueno')).data).toBe(true)
     expect((await d.client.rpc('rol_actual')).data).toBe('dueno')
+  })
+
+  it('funciones futuras nacen cerradas (default privileges)', async () => {
+    const emp = await crearUsuario('empleado')
+    expect((await anon.rpc('_probe_default_acl')).error).not.toBeNull()
+    expect((await emp.client.rpc('_probe_default_acl')).error).not.toBeNull()
+    expect((await admin.rpc('_probe_default_acl')).data).toBe(1)
   })
 })

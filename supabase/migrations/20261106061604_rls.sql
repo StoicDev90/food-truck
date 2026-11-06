@@ -1,6 +1,6 @@
 -- RLS estricta y grants mínimos. Las escrituras de negocio van por funciones SECURITY DEFINER.
 
--- Todo lo nuevo nace cerrado para anon/authenticated (service_role conserva acceso).
+-- Tablas/secuencias nuevas nacen cerradas para anon/authenticated (service_role conserva acceso). Funciones: ver migración default_acl_funciones.
 alter default privileges for role postgres in schema public revoke all on tables from public, anon, authenticated;
 alter default privileges for role postgres in schema public revoke all on sequences from public, anon, authenticated;
 alter default privileges for role postgres in schema public revoke execute on functions from public, anon, authenticated;

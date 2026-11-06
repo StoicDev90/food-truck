@@ -305,7 +305,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "costos_productos":
+            "_probe_default_acl":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"costos_productos":
 { Args: Record<PropertyKey, never>; Returns: {
               "costo_gs": number,"producto_id": string
             }[]
