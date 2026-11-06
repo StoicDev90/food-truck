@@ -76,6 +76,18 @@ npx tsx --env-file=.env.local scripts/crear-dueno.ts <email> <password-min-12-ch
 
 Then open `http://localhost:3000/admin/login`. Owners can also use `/pos`.
 
+## Datos de ejemplo
+
+Con `.env.local` configurado como se indica arriba, cargá una base de ejemplo local:
+
+```bash
+npx supabase start
+npx supabase db reset
+npm run db:demo
+```
+
+`db reset` borra todos los datos de la base **local** únicamente. El script se niega a cargar datos si ya existen categorías o perfiles.
+
 ## Scripts
 
 | Command | What it does |
