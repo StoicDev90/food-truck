@@ -6,6 +6,9 @@ describe('formato de montos', () => {
     expect(formatoGs(31000)).toBe('₲ 31.000'); expect(formatoGs(0)).toBe('₲ 0')
     expect(formatoBrl(21.379)).toBe('R$ 21,38'); expect(formatoBrl(50)).toBe('R$ 50,00')
   })
+  it('redondea reales en el límite decimal', () => {
+    expect(formatoBrl(0.995)).toBe('R$ 1,00')
+  })
   it('interpreta montos válidos y rechaza montos inválidos', () => {
     expect(parseMontoGs('31.000')).toBe(31000); expect(parseMontoGs('₲ 100000')).toBe(100000)
     expect(parseMontoGs('abc')).toBeNull(); expect(parseMontoGs('1,5')).toBeNull(); expect(parseMontoGs('-5')).toBeNull()

@@ -7,7 +7,12 @@ export function formatoGs(n: number): string {
 }
 
 export function formatoBrl(n: number): string {
-  const [entero, decimales] = n.toFixed(2).split('.')
+  if (!Number.isFinite(n)) return `R$ ${n.toFixed(2)}`
+  const centavos = decimalesAEntero(n, 2)
+  const negativo = centavos < BigInt(0)
+  const digitos = (negativo ? -centavos : centavos).toString().padStart(3, '0')
+  const entero = `${negativo ? '-' : ''}${digitos.slice(0, -2)}`
+  const decimales = digitos.slice(-2)
   return `R$ ${agrupar(entero)},${decimales}`
 }
 
@@ -24,3 +29,5 @@ export function parseMontoBrl(s: string): number | null {
   const valor = Number(monto.replace(/\./g, '').replace(',', '.'))
   return Number.isFinite(valor) && valor <= Number.MAX_SAFE_INTEGER / 100 ? valor : null
 }
+import { decimalesAEntero } from './redondeo'
+

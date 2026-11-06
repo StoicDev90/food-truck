@@ -1,7 +1,11 @@
 export type MedioPago = 'efectivo_gs' | 'efectivo_brl' | 'transferencia' | 'tarjeta'
 
 export function equivalenteBrl(totalGs: number, cotizacion: number): number {
-  return Math.round((totalGs / cotizacion) * 100) / 100
+  if (!Number.isFinite(totalGs) || !Number.isFinite(cotizacion) || cotizacion === 0) return totalGs / cotizacion
+  const total = decimalesAEntero(totalGs, 2)
+  const tasa = decimalesAEntero(cotizacion, 2)
+  if (tasa === BigInt(0)) return totalGs / cotizacion
+  return Number(redondearDivision(total * BigInt(100), tasa)) / 100
 }
 
 export function previewCobro(
@@ -17,7 +21,12 @@ export function previewCobro(
       (medio === 'efectivo_brl' && (cotizacion === null || !Number.isFinite(cotizacion) || cotizacion <= 0))) {
     return { equivalenteGs: null, vueltoGs: null, alcanza: false }
   }
-  const equivalenteGs = medio === 'efectivo_brl' ? Math.round(recibido * cotizacion!) : recibido
+  const equivalenteGs = medio === 'efectivo_brl'
+    ? Number(redondearDivision(decimalesAEntero(recibido, 2) * decimalesAEntero(cotizacion!, 2), BigInt(10000)))
+    : recibido
   if (equivalenteGs < totalGs) return { equivalenteGs, vueltoGs: null, alcanza: false }
-  return { equivalenteGs, vueltoGs: Math.round((equivalenteGs - totalGs) / 100) * 100, alcanza: true }
+  const diferencia = decimalesAEntero(equivalenteGs, 2) - decimalesAEntero(totalGs, 2)
+  return { equivalenteGs, vueltoGs: Number(redondearDivision(diferencia, BigInt(10000)) * BigInt(100)), alcanza: true }
 }
+import { decimalesAEntero, redondearDivision } from './redondeo'
+

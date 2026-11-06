@@ -19,4 +19,15 @@ describe('pedido', () => {
     expect(totalGs(pedido)).toBe(31000)
     expect(itemsParaVenta(pedido)).toEqual([{ producto_id: '1', cantidad: 2 }, { producto_id: '2', cantidad: 1 }])
   })
+  it('no modifica el pedido de entrada al agregar o quitar', () => {
+    const pedido = agregar([], producto)
+    const original = structuredClone(pedido)
+    agregar(pedido, producto)
+    quitar(pedido, producto.id)
+    expect(pedido).toEqual(original)
+  })
+  it('conserva el pedido al quitar un producto ausente', () => {
+    const pedido = agregar([], producto)
+    expect(quitar(pedido, 'ausente')).toEqual(pedido)
+  })
 })
