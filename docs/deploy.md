@@ -31,3 +31,7 @@ La configuración de `supabase/config.toml` solo vale en local; en producción s
 ### Plan 3: usuarios del panel
 
 El dueño puede crear empleados, cambiar su PIN, activar o desactivar sus cuentas y desbloquearlas desde el panel. El servidor deriva la contraseña de Auth a partir del usuario y el PIN; requiere `EMPLEADO_PIN_PEPPER` estable y secreto. La clave de servicio se usa solo en el servidor para administrar cuentas, perfiles y bloqueos. Cambiar el pepper invalida los PIN existentes y requiere restablecerlos. Desactivar un perfil impide el acceso incluso con una sesión abierta; desbloquear o resetear el PIN limpia únicamente el bloqueo de esa cuenta, no el de la IP.
+
+## Cotización del real
+- [ ] Configurar `ALLRATES_API_KEY` y `CRON_SECRET` en Vercel como secretos solo de servidor, sin prefijo `NEXT_PUBLIC_`.
+- El cron de Vercel consulta la última cotización publicada por el BCP todos los días a las 03:05 UTC (00:05 en Asunción, UTC−3). Los fines de semana y feriados se usa la última publicación válida de hasta cinco días.
