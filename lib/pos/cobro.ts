@@ -8,6 +8,14 @@ export function equivalenteBrl(totalGs: number, cotizacion: number): number {
   return Number(redondearDivision(total * BigInt(100), tasa)) / 100
 }
 
+// Menor monto en centavos que cubre el total al convertirlo a guaraníes.
+export function montoExactoBrl(totalGs: number, cotizacion: number): number {
+  const total = decimalesAEntero(totalGs, 2)
+  const tasa = decimalesAEntero(cotizacion, 2)
+  const centavos = (total * BigInt(100) + tasa - BigInt(1)) / tasa
+  return Number(centavos) / 100
+}
+
 export function previewCobro(
   totalGs: number,
   medio: MedioPago,

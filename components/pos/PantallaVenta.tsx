@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { DatosPos } from '@/lib/pos/datos'
 import { agregar, quitar, totalGs, type Pedido } from '@/lib/pos/pedido'
@@ -8,21 +8,27 @@ import { useConexion } from '@/lib/pos/useConexion'
 import { BarraPos } from './BarraPos'
 import { GrillaProductos } from './GrillaProductos'
 import { PanelPedido } from './PanelPedido'
+import { DialogoCobro } from './DialogoCobro'
 
 export function PantallaVenta({ datos, onCobrar }: { datos: DatosPos; onCobrar?: (contexto: { pedido: Pedido; onSinTurno: () => void }) => void }) {
   const router = useRouter(); const conectado = useConexion()
+  const [cobroAbierto, setCobroAbierto] = useState(false)
   const [pedido, setPedido] = useState<Pedido>([]); const [categoria, setCategoria] = useState(''); const [filtro, setFiltro] = useState(''); const [expandido, setExpandido] = useState(false)
+  const cobrar = useCallback(() => {
+    if (onCobrar) onCobrar({ pedido, onSinTurno: () => router.refresh() })
+    else setCobroAbierto(true)
+  }, [onCobrar, pedido, router])
   useEffect(() => {
     function teclado(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null
       const interactivo = 'button, a[href], input, select, textarea, [role="button"], [role="menuitem"], [role="tab"], [contenteditable]'
       if ((target instanceof Element && target.closest(interactivo)) || document.activeElement?.closest(interactivo) || document.querySelector('[role="dialog"], dialog[open], [role="alertdialog"]') || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
       if (e.key === 'Escape') setFiltro('')
-      else if (e.key === 'Enter') { if (pedido.length && conectado) { e.preventDefault(); onCobrar?.({ pedido, onSinTurno: () => router.refresh() }) } }
+      else if (e.key === 'Enter') { if (pedido.length && conectado) { e.preventDefault(); cobrar() } }
       else if (e.key.length === 1 && e.key !== ' ') setFiltro(f => f + e.key)
     }
     document.addEventListener('keydown', teclado); return () => document.removeEventListener('keydown', teclado)
-  }, [pedido, conectado, onCobrar, router])
+  }, [pedido, conectado, cobrar])
   if (!datos.turno) return null
   const productos = datos.productos.filter(p => (!categoria || p.categoriaId === categoria) && p.nombre.toLocaleLowerCase('es').includes(filtro.toLocaleLowerCase('es')))
   const panel = (
@@ -34,11 +40,14 @@ export function PantallaVenta({ datos, onCobrar }: { datos: DatosPos; onCobrar?:
       agregar={p => setPedido(actual => agregar(actual, p))}
       quitar={id => setPedido(actual => quitar(actual, id))}
       vaciar={() => setPedido([])}
-      cobrar={() => onCobrar?.({ pedido, onSinTurno: () => router.refresh() })}
+      cobrar={cobrar}
     />
   )
   return (
     <div className="flex min-h-screen flex-1 flex-col">
+      <DialogoCobro abierto={cobroAbierto} pedido={pedido} cotizacion={datos.cotizacion}
+        onCerrar={() => setCobroAbierto(false)} onVendido={() => setPedido([])}
+        onSinTurno={() => { setCobroAbierto(false); router.refresh() }} />
       <BarraPos turno={datos.turno} cotizacion={datos.cotizacion} conectado={conectado} />
       {!conectado && <div role="status" className="bg-destructive px-4 py-3 font-bold text-destructive-foreground">Sin conexión</div>}
       <div className="flex flex-1">

@@ -4,6 +4,7 @@ import { PantallaVenta } from '@/components/pos/PantallaVenta'
 import type { DatosPos } from '@/lib/pos/datos'
 
 const mocks = vi.hoisted(() => ({ conexion: true, refresh: vi.fn() }))
+vi.mock('@/lib/pos/acciones', () => ({ registrarVenta: vi.fn() }))
 vi.mock('@/lib/pos/useConexion', () => ({ useConexion: () => mocks.conexion }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))
 const datos: DatosPos = {
@@ -19,6 +20,12 @@ const datos: DatosPos = {
 afterEach(cleanup)
 beforeEach(() => { mocks.conexion = true; mocks.refresh.mockClear() })
 describe('pantalla de venta', () => {
+  it('abre el diálogo al cobrar', () => {
+    render(<PantallaVenta datos={datos} />)
+    fireEvent.click(screen.getByRole('button', { name: /Empanada/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'COBRAR' }))
+    expect(screen.getByRole('dialog', { name: 'Cobrar ₲ 8.000' })).toBeInTheDocument()
+  })
   it('suma productos y muestra cantidades y totales', () => {
     render(<PantallaVenta datos={datos} />)
     const producto = screen.getByRole('button', { name: /Empanada de carne/ })
