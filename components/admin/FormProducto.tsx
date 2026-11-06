@@ -20,11 +20,13 @@ export function FormProducto({ categorias, producto, onGuardado }: { categorias:
   const [controlaStock, setControlaStock] = useState(producto?.controlaStock ?? false)
   const [visible, setVisible] = useState(producto?.visible ?? true)
   const [fotoPath, setFoto] = useState<string | null>(producto?.fotoPath ?? null)
+  const [subiendoFoto, setSubiendoFoto] = useState(false)
   const [error, setError] = useState('')
   const [errorPrecio, setErrorPrecio] = useState('')
   const { enviando, enviar } = useEnvio()
   function guardar(event: FormEvent) {
     event.preventDefault()
+    if (subiendoFoto) return
     const precioGs = parseMontoGs(precio); const costoGs = costo.trim() ? parseMontoGs(costo) : null
     setErrorPrecio(precioGs === null ? 'Precio inválido' : '')
     if (precioGs === null) return
@@ -46,8 +48,8 @@ export function FormProducto({ categorias, producto, onGuardado }: { categorias:
     <div><label htmlFor="costo">Costo</label><Input className={input} id="costo" inputMode="numeric" value={costo} onChange={e => setCosto(e.target.value)} /></div>
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={controlaStock} onChange={e => setControlaStock(e.target.checked)} />Controla stock</label>
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} />Visible en el menú</label>
-    <SubirImagen carpeta="productos" valor={fotoPath} onChange={setFoto} />
+    <SubirImagen carpeta="productos" valor={fotoPath} onChange={setFoto} onUploadingChange={setSubiendoFoto} />
     {error && <p role="alert" className="text-destructive-texto">{error}</p>}
-    <Button className="min-h-11" type="submit" disabled={enviando || !categoriaId}>{enviando ? 'Guardando…' : 'Guardar'}</Button>
+    <Button className="min-h-11" type="submit" disabled={enviando || subiendoFoto || !categoriaId}>{enviando ? 'Guardando…' : subiendoFoto ? 'Subiendo foto…' : 'Guardar'}</Button>
   </form>
 }
