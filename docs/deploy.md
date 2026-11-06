@@ -27,3 +27,7 @@ La configuración de `supabase/config.toml` solo vale en local; en producción s
 
 ## Plan 3 (usuarios)
 - Crear empleados y resetear PINs con `passwordEmpleado(usuario, pin)` de `lib/auth/pin.ts`; nunca enviar el PIN crudo como contraseña.
+
+### Plan 3: usuarios del panel
+
+El dueño puede crear empleados, cambiar su PIN, activar o desactivar sus cuentas y desbloquearlas desde el panel. El servidor deriva la contraseña de Auth a partir del usuario y el PIN; requiere `EMPLEADO_PIN_PEPPER` estable y secreto. La clave de servicio se usa solo en el servidor para administrar cuentas, perfiles y bloqueos. Cambiar el pepper invalida los PIN existentes y requiere restablecerlos. Desactivar un perfil impide el acceso incluso con una sesión abierta; desbloquear o resetear el PIN limpia únicamente el bloqueo de esa cuenta, no el de la IP.
