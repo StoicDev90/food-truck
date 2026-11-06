@@ -1,4 +1,6 @@
 export const CODIGOS_ERROR = [
+  'EMPLEADO_ALTA_INCOMPLETA',
+  'PIN_ACTUALIZADO_SIN_DESBLOQUEAR',
   'USUARIO_EXISTE',
   'CATEGORIA_EN_USO',
   'NO_AUTORIZADO',
@@ -20,6 +22,8 @@ export const CODIGOS_ERROR = [
 export type CodigoError = (typeof CODIGOS_ERROR)[number]
 
 export const MENSAJES_ERROR: Record<CodigoError, string> = {
+  EMPLEADO_ALTA_INCOMPLETA: 'La cuenta quedó creada a medias. Pedí al administrador que elimine el usuario de Auth antes de volver a intentar.',
+  PIN_ACTUALIZADO_SIN_DESBLOQUEAR: 'El PIN nuevo ya está establecido, pero no se pudo desbloquear la cuenta. Usá Desbloquear.',
   USUARIO_EXISTE: 'Ese usuario ya existe. Elegí otro.',
   CATEGORIA_EN_USO: 'La categoría tiene productos. Movelos antes de borrarla.',
   NO_AUTORIZADO: 'No tenés permiso para realizar esta acción.',

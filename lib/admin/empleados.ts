@@ -18,7 +18,10 @@ export async function crearEmpleado(e: { nombre: string; usuario: string; pin: s
     if (error) return fallo(error.code === 'email_exists' || error.code === 'user_already_exists' ? 'USUARIO_EXISTE' : null)
     const { error: perfilError } = await db.from('perfiles').insert({ id: data.user.id, nombre: e.nombre.trim(), usuario, rol: 'empleado' })
     if (perfilError) {
-      await db.auth.admin.deleteUser(data.user.id)
+      try {
+        const { error: deleteError } = await db.auth.admin.deleteUser(data.user.id)
+        if (deleteError) return fallo('EMPLEADO_ALTA_INCOMPLETA')
+      } catch (e) { unstable_rethrow(e); return fallo('EMPLEADO_ALTA_INCOMPLETA') }
       return fallo(perfilError.code === '23505' ? 'USUARIO_EXISTE' : null)
     }
     return { ok: true, data: { id: data.user.id } }
@@ -38,8 +41,10 @@ export async function resetearPin(id: string, pin: string): Promise<Resultado<nu
     if (!usuario) return fallo('NO_AUTORIZADO')
     const { error } = await db.auth.admin.updateUserById(id, { password: passwordEmpleado(usuario, pin) })
     if (error) return fallo(null)
-    const borrado = await db.from('intentos_login').delete().eq('clave', claveCuentaEmpleado(usuario))
-    if (borrado.error) return fallo(null)
+    try {
+      const borrado = await db.from('intentos_login').delete().eq('clave', claveCuentaEmpleado(usuario))
+      if (borrado.error) return fallo('PIN_ACTUALIZADO_SIN_DESBLOQUEAR')
+    } catch (e) { unstable_rethrow(e); return fallo('PIN_ACTUALIZADO_SIN_DESBLOQUEAR') }
     return { ok: true, data: null }
   } catch (e) { unstable_rethrow(e); return fallo(null) }
 }
