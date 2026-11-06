@@ -11,6 +11,10 @@ describe('seccionActiva', () => {
     expect(seccionActiva(posiciones([140, 250, 360]), 140)).toBe('1')
   })
 
+  it('activa la sección al llegar a su posición de anclaje', () => {
+    expect(seccionActiva([{ id: 'a', top: -100 }, { id: 'b', top: 144 }, { id: 'c', top: 300 }], 124)).toBe('b')
+  })
+
   it('elige la primera sección antes de llegar a ella y no elige ninguna si está vacío', () => {
     expect(seccionActiva([{ id: 'a', top: 200 }, { id: 'b', top: 300 }], 140)).toBe('a')
     expect(seccionActiva([], 140)).toBeUndefined()
