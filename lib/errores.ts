@@ -1,4 +1,5 @@
 export const CODIGOS_ERROR = [
+  'CATEGORIA_EN_USO',
   'NO_AUTORIZADO',
   'VALOR_INVALIDO',
   'MOTIVO_REQUERIDO',
@@ -18,6 +19,7 @@ export const CODIGOS_ERROR = [
 export type CodigoError = (typeof CODIGOS_ERROR)[number]
 
 export const MENSAJES_ERROR: Record<CodigoError, string> = {
+  CATEGORIA_EN_USO: 'La categoría tiene productos. Movelos antes de borrarla.',
   NO_AUTORIZADO: 'No tenés permiso para realizar esta acción.',
   VALOR_INVALIDO: 'El valor ingresado no es válido.',
   MOTIVO_REQUERIDO: 'Tenés que indicar un motivo.',
