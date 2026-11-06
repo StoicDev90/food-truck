@@ -109,3 +109,7 @@
     @apply font-sans;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(nav[aria-label="Categorías"]) { scroll-behavior: smooth; }
+}
