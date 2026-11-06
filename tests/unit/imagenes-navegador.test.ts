@@ -11,6 +11,28 @@ it.each([
   expect(medidasAchicadas(ancho, alto, 600)).toEqual(esperado)
 })
 
+it('dibuja la imagen a escala y exporta WebP', async () => {
+  const archivo = new File(['foto'], 'foto.png', { type: 'image/png' })
+  const imagen = { width: 4000, height: 3000, close: vi.fn() }
+  const webp = new Blob(['convertida'], { type: 'image/webp' })
+  const drawImage = vi.fn()
+  vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(imagen))
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D)
+  const exportar = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (this: HTMLCanvasElement, callback) {
+    expect(this.width).toBe(600)
+    expect(this.height).toBe(450)
+    callback(webp)
+  })
+
+  const resultado = await achicarImagen(archivo)
+
+  expect(resultado).toBe(webp)
+  expect(resultado.type).toBe('image/webp')
+  expect(drawImage).toHaveBeenCalledWith(imagen, 0, 0, 600, 450)
+  expect(exportar).toHaveBeenCalledWith(expect.any(Function), 'image/webp', 0.82)
+  expect(imagen.close).toHaveBeenCalledOnce()
+})
+
 it('devuelve el archivo original si falla la exportación del canvas', async () => {
   const archivo = new File(['foto'], 'foto.png', { type: 'image/png' })
   const close = vi.fn()
