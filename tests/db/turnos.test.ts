@@ -39,6 +39,8 @@ describe('turnos y caja', () => {
     expect(Number(r.esperado_brl)).toBe(0)
     expect(Number(r.diferencia_brl)).toBe(0)
     expect((await e1.client.rpc('cerrar_turno', { p_turno_id: t, p_contado_gs: 1, p_contado_brl: 0 })).error?.message).toBe('TURNO_CERRADO')
+    // movimiento tras el cierre no se adjunta al turno cerrado
+    expect((await mc({ p_sentido: 'salida', p_tipo: 'otro', p_moneda: 'PYG', p_monto: 1, p_motivo: 'tarde' })).error?.message).toBe('SIN_TURNO_ABIERTO')
     expect((await e1.client.rpc('fondo_sugerido')).data).toEqual([{ fondo_gs: 115000, fondo_brl: 0 }])
     // corrección
     expect((await e1.client.rpc('corregir_conteo', { p_turno_id: t, p_contado_gs: 120000, p_contado_brl: 0, p_motivo: 'x' })).error?.message).toBe('NO_AUTORIZADO')

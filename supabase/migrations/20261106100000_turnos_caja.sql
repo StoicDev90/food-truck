@@ -129,7 +129,8 @@ begin
   if public.rol_actual() is null then
     raise exception 'NO_AUTORIZADO';
   end if;
-  select * into t from public.turnos where cerrado_at is null;
+  -- for share: espera a un cierre concurrente y, tras reevaluar (READ COMMITTED), ya no ve turno abierto
+  select * into t from public.turnos where cerrado_at is null for share;
   if not found then
     raise exception 'SIN_TURNO_ABIERTO';
   end if;
