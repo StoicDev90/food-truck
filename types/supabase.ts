@@ -305,7 +305,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "es_dueno":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"rol_actual":
+{ Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol_usuario"]
+                           }
           }
           Enums: {
             "estado_venta": "confirmada"|"anulada","medio_pago": "efectivo_gs"|"efectivo_brl"|"transferencia"|"tarjeta","moneda": "PYG"|"BRL","rol_usuario": "dueno"|"empleado","sentido_caja": "entrada"|"salida","tipo_mov_caja": "retiro"|"pago_proveedor"|"aporte_cambio"|"cambio_moneda"|"otro","tipo_mov_stock": "ingreso"|"venta"|"anulacion"|"ajuste"
