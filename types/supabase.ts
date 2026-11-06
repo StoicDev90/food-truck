@@ -395,6 +395,31 @@ isOneToOne: false
               "cotizacion": number,"equivalente_gs": number,"total_gs": number,"venta_id": string,"vuelto_gs": number
             }[]
                            },
+"reporte_anulaciones":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "anulada_at": string,"anulada_por_nombre": string,"empleado_nombre": string,"fecha": string,"medio": Database["public"]['Enums']["medio_pago"],"motivo": string,"total_gs": number,"vendida_at": string,"venta_id": string
+            }[]
+                           },
+"reporte_cierres":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "abierto_at": string,"cerrado_at": string,"cerrado_por_nombre": string,"contado_anterior_brl": number,"contado_anterior_gs": number,"contado_brl": number,"contado_gs": number,"corregido": boolean,"diferencia_brl": number,"diferencia_gs": number,"empleado_nombre": string,"entradas_brl": number,"entradas_gs": number,"esperado_brl": number,"esperado_gs": number,"fecha": string,"fondo_brl": number,"fondo_gs": number,"salidas_brl": number,"salidas_gs": number,"tarjetas_gs": number,"transferencias_gs": number,"turno_id": string,"ventas_efectivo_brl": number,"ventas_efectivo_gs": number
+            }[]
+                           },
+"reporte_mas_vendidos":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "cantidad": number,"ganancia_gs": number,"nombre": string,"producto_id": string,"total_gs": number,"unidades_sin_costo": number
+            }[]
+                           },
+"reporte_movimientos_caja":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "created_at": string,"fecha": string,"id": string,"moneda": Database["public"]['Enums']["moneda"],"monto": number,"motivo": string,"sentido": Database["public"]['Enums']["sentido_caja"],"tipo": Database["public"]['Enums']["tipo_mov_caja"],"turno_id": string,"usuario_nombre": string
+            }[]
+                           },
+"reporte_ventas":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "anuladas": number,"anuladas_gs": number,"empleado_id": string,"empleado_nombre": string,"equivalente_gs": number,"fecha": string,"medio": Database["public"]['Enums']["medio_pago"],"recibido_brl": number,"total_gs": number,"ventas": number
+            }[]
+                           },
 "reservar_intento_login":
 { Args: { "p_cuenta": string,"p_ip": string }; Returns: boolean
                            },
