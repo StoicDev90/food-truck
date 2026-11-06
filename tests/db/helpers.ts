@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 import { emailDeUsuario } from '@/lib/auth/empleado'
+import { derivarPasswordEmpleado } from '@/lib/auth/pin-derivacion'
 
 const opts = { auth: { persistSession: false, autoRefreshToken: false } }
 const url = () => process.env.SUPABASE_URL!
@@ -25,7 +26,9 @@ export async function crearUsuario(
 ): Promise<{ id: string; usuario: string; client: SupabaseClient<Database> }> {
   const usuario = `u_${sufijo()}`
   const email = rol === 'empleado' ? emailDeUsuario(usuario) : `${usuario}@test.local`
-  const password = rol === 'empleado' ? '123456' : 'secreto-123'
+  const password = rol === 'empleado'
+      ? derivarPasswordEmpleado(usuario, '123456', process.env.EMPLEADO_PIN_PEPPER)
+      : 'secreto-12345678'
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,

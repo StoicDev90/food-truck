@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emailDeUsuario } from '@/lib/auth/empleado'
+import { derivarPasswordEmpleado } from '@/lib/auth/pin-derivacion'
 import { admin, anon, crearProducto, crearUsuario, limpiarOperaciones } from './helpers'
 
 beforeEach(limpiarOperaciones)
@@ -27,8 +28,19 @@ describe('esquema', () => {
     const e1 = await crearUsuario('empleado')
     const { error } = await anon.auth.signInWithPassword({
       email: emailDeUsuario(e1.usuario),
-      password: '123456',
+      password: derivarPasswordEmpleado(e1.usuario, '123456', process.env.EMPLEADO_PIN_PEPPER),
     })
     expect(error).toBeNull()
+  })
+
+  it('el PIN crudo no sirve como contraseña directa en Supabase Auth', async () => {
+    const e1 = await crearUsuario('empleado')
+    const { error } = await anon.auth.signInWithPassword({
+      email: emailDeUsuario(e1.usuario),
+      password: '123456',
+    })
+    expect(error).not.toBeNull()
+  })
+    expect(error).not.toBeNull()
   })
 })

@@ -6,6 +6,7 @@ import { crearClienteServidor } from '@/lib/supabase/server'
 import { DOMINIO_EMPLEADOS, emailDeUsuario, validarPin, validarUsuario } from './empleado'
 import { resolverAcceso, type Seccion } from './acceso'
 import { obtenerPerfil } from './sesion'
+import { passwordEmpleado } from './pin'
 import {
   claveCuentaDueno,
   claveCuentaEmpleado,
@@ -35,7 +36,7 @@ export async function loginEmpleado(_prev: EstadoLogin, fd: FormData): Promise<E
   const supabase = await crearClienteServidor()
   const { error: e } = await supabase.auth.signInWithPassword({
     email: emailDeUsuario(usuario),
-    password: pin,
+    password: passwordEmpleado(usuario, pin),
   })
   if (e) return error
   await limpiarFallos(cuenta, ip)

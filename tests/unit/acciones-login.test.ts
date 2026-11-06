@@ -9,6 +9,9 @@ const m = vi.hoisted(() => ({
 }))
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/auth/pin', () => ({
+  passwordEmpleado: (u: string, p: string) => `derivada(${u.trim().toLowerCase()}:${p})`,
+}))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-forwarded-for': '1.2.3.4' }),
 }))
@@ -86,7 +89,7 @@ describe.each(casos)('$nombre', (c) => {
     expect(m.limpiarFallos).not.toHaveBeenCalled()
   })
 
-  it('signIn ok con perfil inválido: limpia, signOut, ', async () => {
+  it('signIn ok con perfil inválido: limpia y hace signOut', async () => {
     m.obtenerPerfil.mockResolvedValue(c.perfilMal)
     expect(await c.accion(prev, c.form)).toEqual({ error: c.msgPerfilMal })
     expect(m.limpiarFallos).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
@@ -103,6 +106,17 @@ describe.each(casos)('$nombre', (c) => {
     m.reservarIntento.mockRejectedValue(new Error('db caída'))
     await expect(c.accion(prev, c.form)).rejects.toThrow('db caída')
     expect(m.signIn).not.toHaveBeenCalled()
+  })
+})
+
+describe('credenciales enviadas a Supabase', () => {
+  it('loginEmpleado envía la contraseña derivada, no el PIN', async () => {
+    m.obtenerPerfil.mockResolvedValue(casos[0].perfilOk)
+    await expect(loginEmpleado(prev, casos[0].form)).rejects.toThrow('REDIRECT:/pos')
+    expect(m.signIn).toHaveBeenCalledWith({
+      email: 'pepe@empleados.local',
+      password: 'derivada(pepe:123456)',
+    })
   })
 })
 
