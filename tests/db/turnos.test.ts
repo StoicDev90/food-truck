@@ -7,13 +7,39 @@ describe('turnos y caja', () => {
     await limpiarOperaciones()
   })
 
+  it('empleado no puede registrar movimientos de caja (solo dueños)', async () => {
+    const empleado = await crearUsuario('empleado')
+    const turno = (await empleado.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })).data!
+    const { error } = await empleado.client.rpc('registrar_movimiento_caja', {
+      p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 1000, p_motivo: 'x',
+    })
+    expect(error?.message).toBe('NO_AUTORIZADO')
+    const movimientos = await admin.from('movimientos_caja').select().eq('turno_id', turno)
+    expect(movimientos.error).toBeNull()
+    expect(movimientos.data).toEqual([])
+  })
+
+  it('dueño registra movimiento en el turno abierto de un empleado', async () => {
+    const empleado = await crearUsuario('empleado')
+    const dueno = await crearUsuario('dueno')
+    const turno = (await empleado.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })).data!
+    const { error } = await dueno.client.rpc('registrar_movimiento_caja', {
+      p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 1000, p_motivo: 'x',
+    })
+    expect(error).toBeNull()
+    const movimientos = await admin.from('movimientos_caja').select().eq('turno_id', turno)
+    expect(movimientos.error).toBeNull()
+    expect(movimientos.data).toHaveLength(1)
+    expect(movimientos.data![0].usuario_id).toBe(dueno.id)
+  })
+
   it('flujo completo: apertura, movimientos, cierre a ciegas, corrección', async () => {
     const e1 = await crearUsuario('empleado')
     const e2 = await crearUsuario('empleado')
     const d = await crearUsuario('dueno')
     expect((await e1.client.rpc('fondo_sugerido')).data).toEqual([{ fondo_gs: 0, fondo_brl: 0 }])
     expect(
-      (await e1.client.rpc('registrar_movimiento_caja', { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 1, p_motivo: 'x' })).error?.message,
+      (await d.client.rpc('registrar_movimiento_caja', { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 1, p_motivo: 'x' })).error?.message,
     ).toBe('SIN_TURNO_ABIERTO')
     expect((await e1.client.rpc('abrir_turno', { p_fondo_gs: -1, p_fondo_brl: 0 })).error?.message).toBe('VALOR_INVALIDO')
     expect((await e1.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 1.234 })).error?.message).toBe('VALOR_INVALIDO')
@@ -22,7 +48,7 @@ describe('turnos y caja', () => {
     const ta = (await e2.client.rpc('turno_actual')).data!
     expect(ta[0]).toMatchObject({ id: t, empleado_id: e1.id })
     expect(Object.keys(ta[0]).sort()).toEqual(['abierto_at', 'empleado_id', 'empleado_nombre', 'id'])
-    const mc = (args: object) => e1.client.rpc('registrar_movimiento_caja', args as never)
+    const mc = (args: object) => d.client.rpc('registrar_movimiento_caja', args as never)
     expect((await mc({ p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 530000, p_motivo: 'Retiro dueño' })).error).toBeNull()
     expect((await mc({ p_sentido: 'entrada', p_tipo: 'aporte_cambio', p_moneda: 'PYG', p_monto: 50000, p_motivo: 'cambio' })).error).toBeNull()
     expect((await mc({ p_sentido: 'entrada', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 1, p_motivo: 'x' })).error?.message).toBe('VALOR_INVALIDO')
@@ -69,6 +95,7 @@ describe('turnos y caja', () => {
 
   it('movimiento concurrente a un cierre no se adjunta al turno cerrado', async () => {
     const e1 = await crearUsuario('empleado')
+    const d = await crearUsuario('dueno')
     const t = (await e1.client.rpc('abrir_turno', { p_fondo_gs: 0, p_fondo_brl: 0 })).data!
     const c = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL })
     await c.connect()
@@ -80,7 +107,7 @@ describe('turnos y caja', () => {
         [t, e1.id],
       )
       // el builder de supabase-js es lazy: Promise.resolve lo dispara ya
-      const p = Promise.resolve(e1.client.rpc('registrar_movimiento_caja', {
+      const p = Promise.resolve(d.client.rpc('registrar_movimiento_caja', {
         p_sentido: 'salida', p_tipo: 'otro', p_moneda: 'PYG', p_monto: 1000, p_motivo: 'carrera',
       }))
       await new Promise((r) => setTimeout(r, 500))

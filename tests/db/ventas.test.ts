@@ -167,6 +167,7 @@ describe('ventas', () => {
 
   it('cierre con ventas: esperado de caja, anulada no cuenta, no se anula tras el cierre', async () => {
     const e1 = await crearUsuario('empleado')
+    const d = await crearUsuario('dueno')
     const emp = await crearProducto({ precioGs: 8000, stock: 40 })
     const cer = await crearProducto({ precioGs: 15000, stock: 24 })
     await cotizar()
@@ -178,7 +179,7 @@ describe('ventas', () => {
     const una = (await vender(e1.client, pedido, 'tarjeta')).data![0].venta_id
     const anulada = (await vender(e1.client, pedido, 'efectivo_gs', 50000)).data![0].venta_id
     expect((await e1.client.rpc('anular_venta', { p_venta_id: anulada, p_motivo: 'error' })).error).toBeNull()
-    await e1.client.rpc('registrar_movimiento_caja', { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 20000, p_motivo: 'retiro' })
+    await d.client.rpc('registrar_movimiento_caja', { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 20000, p_motivo: 'retiro' })
     const r = (await e1.client.rpc('cerrar_turno', { p_turno_id: turno, p_contado_gs: 69500, p_contado_brl: 50 })).data!
     expect(r).toMatchObject({ esperado_gs: 69500, diferencia_gs: 0, transferencias_gs: 31000, tarjetas_gs: 31000 })
     expect(Number(r.esperado_brl)).toBe(50)
