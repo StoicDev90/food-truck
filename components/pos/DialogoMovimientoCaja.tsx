@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useEnvio } from '@/lib/admin/useEnvio'
 import { useRouter } from 'next/navigation'
 import { registrarMovimientoCaja } from '@/lib/pos/acciones'
 import { parseMontoBrl, parseMontoGs } from '@/lib/pos/formato'
@@ -13,16 +14,16 @@ export function DialogoMovimientoCaja({ onCerrar }: { onCerrar: () => void }) {
   const [monto, setMonto] = useState('')
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState('')
-  const [pendiente, setPendiente] = useState(false)
+  const { enviando: pendiente, enviar: conBloqueo } = useEnvio()
   async function enviar(e: React.FormEvent) {
     e.preventDefault()
     const valor = moneda === 'PYG' ? parseMontoGs(monto) : parseMontoBrl(monto)
     if (valor === null || valor <= 0 || !motivo.trim()) { setError('Ingresá un monto válido y un motivo.'); return }
-    setPendiente(true)
-    const resultado = await registrarMovimientoCaja({ sentido, tipo, moneda, monto: valor, motivo: motivo.trim() })
-    setPendiente(false)
-    if (!resultado.ok) { setError(resultado.error); return }
-    router.refresh(); onCerrar()
+    await conBloqueo(async () => {
+      const resultado = await registrarMovimientoCaja({ sentido, tipo, moneda, monto: valor, motivo: motivo.trim() })
+      if (!resultado.ok) { setError(resultado.error); return }
+      router.refresh(); onCerrar()
+    })
   }
   const campo = 'mt-1 min-h-11 w-full rounded-md border bg-background px-3'
   return <form onSubmit={enviar} className="space-y-4">
@@ -32,6 +33,6 @@ export function DialogoMovimientoCaja({ onCerrar }: { onCerrar: () => void }) {
     <label className="block">Monto<input className={campo} inputMode="decimal" value={monto} onChange={e => setMonto(e.target.value)} /></label>
     <label className="block">Motivo<input className={campo} value={motivo} onChange={e => setMotivo(e.target.value)} /></label>
     {error && <p role="alert" className="text-destructive-texto">{error}</p>}
-    <button disabled={pendiente || !motivo.trim()} className="min-h-11 rounded-md bg-primary px-4 font-bold text-primary-foreground disabled:opacity-50">Registrar movimiento</button>
+    <button disabled={pendiente || !motivo.trim()} className="min-h-11 rounded-md bg-primary px-4 font-bold text-primary-foreground disabled:opacity-50">{pendiente ? 'Guardando…' : 'Registrar movimiento'}</button>
   </form>
 }

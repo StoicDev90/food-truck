@@ -8,26 +8,8 @@ import { codigoDeError } from '@/lib/errores'
 import { fallo, invalido, enteroValido, montoValido, uuidValido, motivoValido, type Resultado } from '@/lib/acciones/resultado'
 import { TAG_MENU } from '@/lib/cache'
 import type { MedioPago } from './cobro'
-import type { Database } from '@/types/supabase'
+import { mapResumen, type ResumenCaja } from '@/lib/caja/resumen'
 
-export type ResumenCaja = {
-  fondoGs: number
-  fondoBrl: number
-  ventasEfectivoGs: number
-  ventasEfectivoBrl: number
-  entradasGs: number
-  entradasBrl: number
-  salidasGs: number
-  salidasBrl: number
-  esperadoGs: number
-  esperadoBrl: number
-  contadoGs: number
-  contadoBrl: number
-  diferenciaGs: number
-  diferenciaBrl: number
-  transferenciasGs: number
-  tarjetasGs: number
-}
 type VentaTurno = { id: string; createdAt: string; totalGs: number; medio: MedioPago; estado: 'confirmada' | 'anulada'; empleadoNombre: string }
 
 type EntradaVenta = { clave: string; items: { producto_id: string; cantidad: number }[]; medio: MedioPago; montoRecibido: number | null }
@@ -38,27 +20,6 @@ function entradaVentaValida(input: EntradaVenta): boolean {
       i && typeof i === 'object' && uuidValido(i.producto_id) &&
       Number.isSafeInteger(i.cantidad) && i.cantidad >= 1
     ) && (input.montoRecibido === null || montoValido(input.montoRecibido))
-}
-
-function mapResumen(r: Database['public']['CompositeTypes']['resumen_caja']): ResumenCaja {
-  return {
-    fondoGs: Number(r.fondo_gs),
-    fondoBrl: Number(r.fondo_brl),
-    ventasEfectivoGs: Number(r.ventas_efectivo_gs),
-    ventasEfectivoBrl: Number(r.ventas_efectivo_brl),
-    entradasGs: Number(r.entradas_gs),
-    entradasBrl: Number(r.entradas_brl),
-    salidasGs: Number(r.salidas_gs),
-    salidasBrl: Number(r.salidas_brl),
-    esperadoGs: Number(r.esperado_gs),
-    esperadoBrl: Number(r.esperado_brl),
-    contadoGs: Number(r.contado_gs),
-    contadoBrl: Number(r.contado_brl),
-    diferenciaGs: Number(r.diferencia_gs),
-    diferenciaBrl: Number(r.diferencia_brl),
-    transferenciasGs: Number(r.transferencias_gs),
-    tarjetasGs: Number(r.tarjetas_gs),
-  }
 }
 
 export async function abrirTurno(fondoGs: number, fondoBrl: number): Promise<Resultado<null>> {

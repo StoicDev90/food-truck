@@ -1,0 +1,14 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import { TablaResumenCaja } from '@/components/caja/TablaResumenCaja'
+import { DialogoCorregirConteo } from '@/components/admin/DialogoCorregirConteo'
+import { DialogoCierreForzado } from '@/components/admin/DialogoCierreForzado'
+const m = vi.hoisted(() => ({ cerrar: vi.fn(), corregir: vi.fn(), refresh: vi.fn() }))
+vi.mock('@/lib/admin/turnos', () => ({ cerrarTurnoForzado: m.cerrar, corregirConteo: m.corregir }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: m.refresh }) }))
+afterEach(() => { cleanup(); vi.clearAllMocks() })
+const resumen = { fondoGs: 100000, fondoBrl: 0, ventasEfectivoGs: 1250000, ventasEfectivoBrl: 120, entradasGs: 0, entradasBrl: 0, salidasGs: 530000, salidasBrl: 0, esperadoGs: 820000, esperadoBrl: 120, contadoGs: 815000, contadoBrl: 120, diferenciaGs: -5000, diferenciaBrl: 0, transferenciasGs: 480000, tarjetasGs: 910000 }
+it('muestra el desglose del ejemplo', () => { render(<TablaResumenCaja resumen={resumen} />); for (const texto of ['Fondo inicial', '+ Ventas en efectivo', '− Retiros y pagos', '= Esperado', 'Contado', 'Diferencia', '100.000', '1.250.000', '−530.000', '820.000', '815.000', '−5.000']) expect(screen.getByText(texto)).toBeInTheDocument(); expect(screen.getByText(/Transferencias ₲ 480.000/)).toHaveTextContent('Tarjetas ₲ 910.000') })
+it('cierre forzado bloquea doble envío y muestra el resultado', async () => { let resolver!: (v: unknown) => void; m.cerrar.mockReturnValue(new Promise(r => { resolver = r })); render(<DialogoCierreForzado turnoId="id" />); fireEvent.click(screen.getByRole('button', { name: 'Cerrar turno (forzado)' })); const boton = screen.getByRole('button', { name: 'Confirmar conteo' }); fireEvent.click(boton); fireEvent.submit(boton.closest('form')!); expect(m.cerrar).toHaveBeenCalledOnce(); resolver({ ok: true, data: resumen }); expect(await screen.findByText('−5.000')).toBeInTheDocument() })
+
+it('corregir requiere motivo y envía una sola vez', async () => { let resolver!: (v: unknown) => void; m.corregir.mockReturnValue(new Promise(r => { resolver = r })); render(<DialogoCorregirConteo turnoId="id" contadoGs={815000} contadoBrl={120} />); fireEvent.click(screen.getByRole('button', { name: 'Corregir conteo' })); fireEvent.click(screen.getByRole('button', { name: 'Guardar corrección' })); expect(m.corregir).not.toHaveBeenCalled(); expect(screen.getByRole('alert')).toHaveTextContent(/motivo/i); fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Error de conteo' } }); const boton = screen.getByRole('button', { name: 'Guardar corrección' }); fireEvent.click(boton); fireEvent.submit(boton.closest('form')!); expect(m.corregir).toHaveBeenCalledOnce(); resolver({ ok: true, data: null }); await screen.findByRole('button', { name: 'Corregir conteo' }) })
