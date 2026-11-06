@@ -425,7 +425,7 @@ isOneToOne: false
           }
           CompositeTypes: {
             "resumen_caja": {
-                        "esperado_gs": number | null,"esperado_brl": number | null,"contado_gs": number | null,"contado_brl": number | null,"diferencia_gs": number | null,"diferencia_brl": number | null,"transferencias_gs": number | null,"tarjetas_gs": number | null
+                        "esperado_gs": number | null,"esperado_brl": number | null,"contado_gs": number | null,"contado_brl": number | null,"diferencia_gs": number | null,"diferencia_brl": number | null,"transferencias_gs": number | null,"tarjetas_gs": number | null,"fondo_gs": number | null,"fondo_brl": number | null,"ventas_efectivo_gs": number | null,"ventas_efectivo_brl": number | null,"entradas_gs": number | null,"entradas_brl": number | null,"salidas_gs": number | null,"salidas_brl": number | null
                       }
           }
         }

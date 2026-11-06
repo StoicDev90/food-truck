@@ -182,6 +182,11 @@ describe('ventas', () => {
     await d.client.rpc('registrar_movimiento_caja', { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 20000, p_motivo: 'retiro' })
     const r = (await e1.client.rpc('cerrar_turno', { p_turno_id: turno, p_contado_gs: 69500, p_contado_brl: 50 })).data!
     expect(r).toMatchObject({ esperado_gs: 69500, diferencia_gs: 0, transferencias_gs: 31000, tarjetas_gs: 31000 })
+    expect(r).toMatchObject({ fondo_gs: 100000, fondo_brl: 0, ventas_efectivo_gs: -10500, ventas_efectivo_brl: 50, entradas_gs: 0, entradas_brl: 0, salidas_gs: 20000, salidas_brl: 0, contado_gs: 69500, contado_brl: 50 })
+    const desglose = r as unknown as Record<string, number>
+    for (const moneda of ['gs', 'brl']) {
+      expect(Number(desglose[`fondo_${moneda}`]) + Number(desglose[`ventas_efectivo_${moneda}`]) + Number(desglose[`entradas_${moneda}`]) - Number(desglose[`salidas_${moneda}`])).toBe(Number(desglose[`esperado_${moneda}`]))
+    }
     expect(Number(r.esperado_brl)).toBe(50)
     expect(Number(r.diferencia_brl)).toBe(0)
     expect((await e1.client.rpc('anular_venta', { p_venta_id: una, p_motivo: 'x' })).error?.message).toBe('VENTA_NO_ANULABLE')

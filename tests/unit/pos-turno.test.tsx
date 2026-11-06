@@ -1,0 +1,70 @@
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const m = vi.hoisted(() => ({ abrir: vi.fn(), cerrar: vi.fn(), sesion: vi.fn(), refresh: vi.fn() }))
+vi.mock('@/lib/pos/acciones', () => ({ abrirTurno: m.abrir, cerrarTurno: m.cerrar }))
+vi.mock('@/lib/auth/acciones', () => ({ cerrarSesion: m.sesion }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: m.refresh }) }))
+import { AbrirTurno } from '@/components/pos/AbrirTurno'
+import { CerrarTurno, TIEMPO_CIERRE_SESION_MS } from '@/components/pos/CerrarTurno'
+
+const resumen = { fondoGs: 100000, fondoBrl: 0, ventasEfectivoGs: 1250000, ventasEfectivoBrl: 120, entradasGs: 0, entradasBrl: 0, salidasGs: 530000, salidasBrl: 0, esperadoGs: 820000, esperadoBrl: 120, contadoGs: 815000, contadoBrl: 120, diferenciaGs: -5000, diferenciaBrl: 0, transferenciasGs: 480000, tarjetasGs: 910000 }
+beforeEach(() => { vi.clearAllMocks(); m.abrir.mockResolvedValue({ ok: true }); m.cerrar.mockResolvedValue({ ok: true, data: resumen }); m.sesion.mockResolvedValue(undefined) })
+afterEach(() => { cleanup(); vi.useRealTimers() })
+describe('turno', () => {
+  it('abre el turno con fondo editado y actualiza la página', async () => {
+    render(<AbrirTurno nombre="Juan" fondoSugerido={{ gs: 100000, brl: 0 }} />)
+    expect(screen.getByText('Hola, Juan')).toBeInTheDocument()
+    expect(screen.getByLabelText('Fondo inicial ₲')).toHaveValue('₲ 100.000')
+    fireEvent.change(screen.getByLabelText('Fondo inicial ₲'), { target: { value: '815.000' } })
+    expect(screen.getByText('La diferencia con el cierre anterior queda registrada')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ABRIR TURNO' }))
+    await waitFor(() => expect(m.abrir).toHaveBeenCalledWith(815000, 0))
+    expect(m.refresh).toHaveBeenCalled()
+  })
+  it('muestra error de apertura', async () => {
+    m.abrir.mockResolvedValue({ ok: false, codigo: 'TURNO_YA_ABIERTO', error: 'Ya hay un turno abierto' })
+    render(<AbrirTurno nombre="Juan" fondoSugerido={{ gs: 0, brl: 0 }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'ABRIR TURNO' }))
+    expect(await screen.findByText('Ya hay un turno abierto')).toBeInTheDocument()
+  })
+  it('mantiene el conteo ciego, valida y muestra el desglose solo al confirmar', async () => {
+    render(<CerrarTurno turnoId="t" abierto="hoy" onCerrar={vi.fn()} />)
+    expect(screen.queryByText(/Esperado/)).not.toBeInTheDocument()
+    expect(screen.getByText('Al confirmar, el conteo queda final. Solo un dueño puede corregirlo.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Contado ₲'), { target: { value: 'abc' } })
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/ }))
+    expect(m.cerrar).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Contado ₲'), { target: { value: '815.000' } })
+    fireEvent.change(screen.getByLabelText('Contado R$'), { target: { value: '120' } })
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/ }))
+    expect(await screen.findByText('= Esperado')).toBeInTheDocument()
+    expect(screen.getByText('820.000')).toBeInTheDocument()
+    expect(screen.getByText('815.000')).toBeInTheDocument()
+    expect(screen.getByText('−5.000')).toHaveClass('text-destructive-texto')
+    expect(screen.getAllByText('0,00').some(cell => cell.classList.contains('text-exito'))).toBe(true)
+    expect(screen.getByText('Transferencias ₲ 480.000 · Tarjetas ₲ 910.000')).toBeInTheDocument()
+    expect(screen.queryByText('+ Entradas')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Listo · cerrar sesión' }))
+    expect(m.sesion).toHaveBeenCalledWith('pos')
+  })
+  it('muestra error de cierre sin avanzar', async () => {
+    m.cerrar.mockResolvedValue({ ok: false, codigo: 'TURNO_CERRADO', error: 'Turno cerrado' })
+    render(<CerrarTurno turnoId="t" abierto="hoy" onCerrar={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/ }))
+    expect(await screen.findByText('Turno cerrado')).toBeInTheDocument()
+    expect(screen.queryByText(/Esperado/)).not.toBeInTheDocument()
+  })
+  it('cierra la sesión a los 150 segundos', async () => {
+    vi.useFakeTimers()
+    render(<CerrarTurno turnoId="t" abierto="hoy" onCerrar={vi.fn()} />)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Confirmar/ })) })
+    expect(TIEMPO_CIERRE_SESION_MS).toBe(150000)
+    await act(async () => { vi.advanceTimersByTime(149999) })
+    expect(m.sesion).not.toHaveBeenCalled()
+    await act(async () => { fireEvent.pointerDown(window); vi.advanceTimersByTime(149999) })
+    expect(m.sesion).not.toHaveBeenCalled()
+    await act(async () => { vi.advanceTimersByTime(1) })
+    expect(m.sesion).toHaveBeenCalledWith('pos')
+  })
+})

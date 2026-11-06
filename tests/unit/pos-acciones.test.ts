@@ -67,8 +67,8 @@ describe('acciones POS', () => {
   })
 
   it('convierte el resumen de cierre a números', async () => {
-    m.rpc.mockResolvedValue({ data: { esperado_gs: '100', esperado_brl: '2.5', contado_gs: '110', contado_brl: '3', diferencia_gs: '10', diferencia_brl: '0.5', transferencias_gs: '20', tarjetas_gs: '30' }, error: null })
-    expect(await cerrarTurno(uuid, 110, 3)).toEqual({ ok: true, data: { esperadoGs: 100, esperadoBrl: 2.5, contadoGs: 110, contadoBrl: 3, diferenciaGs: 10, diferenciaBrl: 0.5, transferenciasGs: 20, tarjetasGs: 30 } })
+    m.rpc.mockResolvedValue({ data: { fondo_gs: '10', fondo_brl: '1', ventas_efectivo_gs: '80', ventas_efectivo_brl: '2', entradas_gs: '20', entradas_brl: '3', salidas_gs: '10', salidas_brl: '3.5', esperado_gs: '100', esperado_brl: '2.5', contado_gs: '110', contado_brl: '3', diferencia_gs: '10', diferencia_brl: '0.5', transferencias_gs: '20', tarjetas_gs: '30' }, error: null })
+    expect(await cerrarTurno(uuid, 110, 3)).toEqual({ ok: true, data: { fondoGs: 10, fondoBrl: 1, ventasEfectivoGs: 80, ventasEfectivoBrl: 2, entradasGs: 20, entradasBrl: 3, salidasGs: 10, salidasBrl: 3.5, esperadoGs: 100, esperadoBrl: 2.5, contadoGs: 110, contadoBrl: 3, diferenciaGs: 10, diferenciaBrl: 0.5, transferenciasGs: 20, tarjetasGs: 30 } })
   })
 
   it.each([['anulación', () => anularVenta(uuid, 'error')], ['ingreso', () => ingresarStock(uuid, 1, null)]])('%s actualiza el menú', async (_nombre, accion) => {

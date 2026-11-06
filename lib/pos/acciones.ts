@@ -9,7 +9,7 @@ import { TAG_MENU } from '@/lib/cache'
 import type { MedioPago } from './cobro'
 
 export type Resultado<T> = { ok: true; data: T } | { ok: false; error: string; codigo: CodigoError | null }
-export type ResumenCaja = { esperadoGs: number; esperadoBrl: number; contadoGs: number; contadoBrl: number; diferenciaGs: number; diferenciaBrl: number; transferenciasGs: number; tarjetasGs: number }
+export type ResumenCaja = { fondoGs: number; fondoBrl: number; ventasEfectivoGs: number; ventasEfectivoBrl: number; entradasGs: number; entradasBrl: number; salidasGs: number; salidasBrl: number; esperadoGs: number; esperadoBrl: number; contadoGs: number; contadoBrl: number; diferenciaGs: number; diferenciaBrl: number; transferenciasGs: number; tarjetasGs: number }
 type VentaTurno = { id: string; createdAt: string; totalGs: number; medio: MedioPago; estado: 'confirmada' | 'anulada'; empleadoNombre: string }
 
 const fallo = (codigo: CodigoError | null): Resultado<never> => ({ ok: false, codigo, error: codigo ? MENSAJES_ERROR[codigo] : 'No se pudo completar. Probá de nuevo.' })
@@ -114,7 +114,7 @@ export async function cerrarTurno(turnoId: string, contadoGs: number, contadoBrl
     const { data: r, error } = await db.rpc('cerrar_turno', { p_turno_id: turnoId, p_contado_gs: contadoGs, p_contado_brl: contadoBrl })
     if (error) return fallo(codigoDeError(error))
     if (!r) return fallo(null)
-    return { ok: true, data: { esperadoGs: Number(r.esperado_gs), esperadoBrl: Number(r.esperado_brl), contadoGs: Number(r.contado_gs), contadoBrl: Number(r.contado_brl), diferenciaGs: Number(r.diferencia_gs), diferenciaBrl: Number(r.diferencia_brl), transferenciasGs: Number(r.transferencias_gs), tarjetasGs: Number(r.tarjetas_gs) } }
+    return { ok: true, data: { fondoGs: Number(r.fondo_gs), fondoBrl: Number(r.fondo_brl), ventasEfectivoGs: Number(r.ventas_efectivo_gs), ventasEfectivoBrl: Number(r.ventas_efectivo_brl), entradasGs: Number(r.entradas_gs), entradasBrl: Number(r.entradas_brl), salidasGs: Number(r.salidas_gs), salidasBrl: Number(r.salidas_brl), esperadoGs: Number(r.esperado_gs), esperadoBrl: Number(r.esperado_brl), contadoGs: Number(r.contado_gs), contadoBrl: Number(r.contado_brl), diferenciaGs: Number(r.diferencia_gs), diferenciaBrl: Number(r.diferencia_brl), transferenciasGs: Number(r.transferencias_gs), tarjetasGs: Number(r.tarjetas_gs) } }
   } catch (error) {
     unstable_rethrow(error)
     return fallo(null)
