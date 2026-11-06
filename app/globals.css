@@ -26,8 +26,10 @@
   --color-precio: var(--precio);
   --color-superficie-boton: var(--superficie-boton);
   --color-exito: var(--exito);
+  --color-exito-texto: var(--exito-texto);
   --color-exito-fondo: var(--exito-fondo);
   --color-aviso: var(--aviso);
+  --color-aviso-texto: var(--aviso-texto);
   --color-aviso-fondo: var(--aviso-fondo);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
@@ -67,8 +69,8 @@
   --marca: #7e22ce; --precio: #be185d; --superficie-boton: #ffffff;
   --border: #e9d5ff; --input: #e9d5ff; --ring: #7e22ce;
   --destructive: #b91c1c; --destructive-foreground: #ffffff; --destructive-texto: #b91c1c;
-  --exito: #047857; --exito-fondo: #ecfdf5;
-  --aviso: #9a3412; --aviso-fondo: #fff7ed;
+  --exito: #047857; --exito-fondo: #ecfdf5; --exito-texto: #047857;
+  --aviso: #9a3412; --aviso-fondo: #fff7ed; --aviso-texto: #9a3412;
   --chart-1: #7e22ce; --chart-2: #be185d; --chart-3: #047857; --chart-4: #9a3412; --chart-5: #6b21a8;
   --radius: 1rem;
   --sidebar: #1e0b2e; --sidebar-foreground: #fdf4ff;
@@ -83,6 +85,7 @@
 
 .dark {
   --destructive-texto: #fca5a5;
+  --exito-texto: #6ee7b7; --aviso-texto: #fdba74;
   --background: #1e0b2e; --foreground: #fdf4ff;
   --card: #2e1245; --card-foreground: #fdf4ff;
   --popover: #2e1245; --popover-foreground: #fdf4ff;
