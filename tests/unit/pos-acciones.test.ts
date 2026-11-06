@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const m = vi.hoisted(() => ({ acceso: vi.fn(), rpc: vi.fn(), updateTag: vi.fn() }))
+const m = vi.hoisted(() => ({ acceso: vi.fn(), rpc: vi.fn(), from: vi.fn(), updateTag: vi.fn() }))
 vi.mock('server-only', () => ({}))
-vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 vi.mock('next/cache', () => ({ updateTag: m.updateTag }))
 vi.mock('@/lib/auth/sesion', () => ({ requerirAcceso: m.acceso }))
-vi.mock('@/lib/supabase/server', () => ({ crearClienteServidor: async () => ({ rpc: m.rpc }) }))
+vi.mock('@/lib/supabase/server', () => ({ crearClienteServidor: async () => ({ rpc: m.rpc, from: m.from }) }))
 
 import { abrirTurno, registrarVenta, ventasDelTurno, anularVenta, ingresarStock, registrarMovimientoCaja, cerrarTurno } from '@/lib/pos/acciones'
+import { cargarPos } from '@/lib/pos/datos'
+import { getRedirectError } from 'next/dist/client/components/redirect'
 import { MENSAJES_ERROR } from '@/lib/errores'
 
 const uuid = '123e4567-e89b-42d3-a456-426614174000'
@@ -73,5 +74,55 @@ describe('acciones POS', () => {
   it.each([['anulación', () => anularVenta(uuid, 'error')], ['ingreso', () => ingresarStock(uuid, 1, null)]])('%s actualiza el menú', async (_nombre, accion) => {
     await accion()
     expect(m.updateTag).toHaveBeenCalledWith('menu')
+  })
+})
+
+
+describe('errores de acceso y entradas malformadas', () => {
+  const acciones = [
+    () => abrirTurno(0, 0), () => registrarVenta(venta), () => ventasDelTurno(),
+    () => anularVenta(uuid, 'error'), () => ingresarStock(uuid, 1, null),
+    () => registrarMovimientoCaja(movimiento), () => cerrarTurno(uuid, 0, 0),
+  ]
+  it.each(acciones)('captura errores de acceso', async accion => {
+    m.acceso.mockRejectedValue(new Error('red'))
+    expect(await accion()).toEqual(generico)
+    expect(m.rpc).not.toHaveBeenCalled()
+  })
+  it.each(acciones)('propaga redirect de acceso', async accion => {
+    const error = getRedirectError('/login', 'replace')
+    m.acceso.mockRejectedValue(error)
+    await expect(accion()).rejects.toBe(error)
+    expect(m.rpc).not.toHaveBeenCalled()
+  })
+  it.each([null, { ...venta, items: [null] }, { ...venta, items: 'x' },
+    { ...venta, items: [{ producto_id: uuid, cantidad: NaN }] },
+    { ...venta, items: [{ producto_id: uuid, cantidad: Infinity }] },
+  ])('rechaza venta malformada', async input => {
+    expect(await registrarVenta(input as typeof venta)).toEqual({ ok: false, codigo: 'VALOR_INVALIDO', error: MENSAJES_ERROR.VALOR_INVALIDO })
+    expect(m.rpc).not.toHaveBeenCalled()
+  })
+  it('rechaza movimiento nulo y montos no finitos', async () => {
+    for (const input of [null, { ...movimiento, monto: NaN }, { ...movimiento, monto: Infinity }]) {
+      expect(await registrarMovimientoCaja(input as typeof movimiento)).toEqual({ ok: false, codigo: 'VALOR_INVALIDO', error: MENSAJES_ERROR.VALOR_INVALIDO })
+    }
+    expect(m.rpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('cargarPos', () => {
+  it.each(['dueno', 'empleado'] as const)('carga perfil %s y convierte números', async rol => {
+    const perfil = { id: uuid, rol, nombre: 'A', activo: true }
+    m.acceso.mockResolvedValue(perfil)
+    m.rpc.mockImplementation((nombre: string) => Promise.resolve({ data: nombre === 'turno_actual' ? [] : nombre === 'fondo_sugerido' ? [{ fondo_gs: '100', fondo_brl: '2.5' }] : null, error: null }))
+    const selects: Record<string, string> = {}
+    m.from.mockImplementation((tabla: string) => {
+      const rows = tabla === 'categorias' ? [{ id: 'c', nombre: 'C', orden: 1 }] : [{ id: uuid, categoria_id: 'c', nombre: 'P', precio_gs: '50', stock: '3', controla_stock: true }]
+      const builder = { select: (columnas: string) => { selects[tabla] = columnas; return builder }, eq: () => builder, order: () => builder, then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(resolve) }
+      return builder
+    })
+    expect(await cargarPos()).toEqual({ perfil, turno: null, categorias: [{ id: 'c', nombre: 'C' }], productos: [{ id: uuid, categoriaId: 'c', nombre: 'P', precioGs: 50, stock: 3, controlaStock: true }], cotizacion: null, fondoSugerido: { gs: 100, brl: 2.5 } })
+    expect(selects.productos).toBe('id, categoria_id, nombre, precio_gs, stock, controla_stock')
+    expect(selects.productos).not.toContain('*')
   })
 })
