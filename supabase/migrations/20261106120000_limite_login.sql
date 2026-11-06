@@ -9,16 +9,6 @@ create table public.intentos_login (
 alter table public.intentos_login enable row level security;
 revoke all on public.intentos_login from anon, authenticated;
 
-create function public.login_bloqueado(p_cuenta text, p_ip text)
-returns boolean
-language sql security definer set search_path = ''
-as $$
-  select exists (
-    select 1 from public.intentos_login
-    where clave in (p_cuenta, p_ip) and bloqueado_hasta > now()
-  )
-$$;
-
 -- Upsert atómico de una clave: reinicia si el último fallo pasó de 15 min; al llegar al umbral bloquea y pone fallos en 0.
 create function public._contar_fallo_login(p_clave text, p_umbral int, p_bloqueo interval)
 returns void
@@ -39,27 +29,42 @@ as $$
     ultimo_fallo = now()
 $$;
 
-create function public.registrar_fallo_login(p_cuenta text, p_ip text)
+-- Reserva atómica de un intento: bloquea ambas filas (cuenta, luego IP), rechaza si alguna está bloqueada
+-- y si no, cuenta el intento en ambas. Se llama ANTES de signIn, así intentos paralelos no se cuelan.
+create function public.reservar_intento_login(p_cuenta text, p_ip text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  insert into public.intentos_login (clave) values (p_cuenta) on conflict do nothing;
+  insert into public.intentos_login (clave) values (p_ip) on conflict do nothing;
+  perform 1 from public.intentos_login where clave = p_cuenta for update;
+  perform 1 from public.intentos_login where clave = p_ip for update;
+  if exists (
+    select 1 from public.intentos_login
+    where clave in (p_cuenta, p_ip) and bloqueado_hasta > now()
+  ) then
+    return false;
+  end if;
+  perform public._contar_fallo_login(p_cuenta, 5, interval '5 minutes');
+  perform public._contar_fallo_login(p_ip, 20, interval '15 minutes');
+  return true;
+end
+$$;
+
+-- Login correcto: borra la cuenta y devuelve la reserva a la IP (sin levantar un bloqueo de IP).
+create function public.limpiar_fallos_login(p_cuenta text, p_ip text)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  perform public._contar_fallo_login(p_cuenta, 5, interval '5 minutes');
-  perform public._contar_fallo_login(p_ip, 20, interval '15 minutes');
+  delete from public.intentos_login where clave = p_cuenta;
+  update public.intentos_login set fallos = greatest(fallos - 1, 0) where clave = p_ip;
 end
 $$;
 
-create function public.limpiar_fallos_login(p_cuenta text)
-returns void
-language sql security definer set search_path = ''
-as $$
-  delete from public.intentos_login where clave = p_cuenta
-$$;
-
 revoke execute on function public._contar_fallo_login(text, int, interval) from public, anon, authenticated;
-revoke execute on function public.login_bloqueado(text, text) from public, anon, authenticated;
-revoke execute on function public.registrar_fallo_login(text, text) from public, anon, authenticated;
-revoke execute on function public.limpiar_fallos_login(text) from public, anon, authenticated;
-grant execute on function public.login_bloqueado(text, text) to service_role;
-grant execute on function public.registrar_fallo_login(text, text) to service_role;
-grant execute on function public.limpiar_fallos_login(text) to service_role;
+revoke execute on function public.reservar_intento_login(text, text) from public, anon, authenticated;
+revoke execute on function public.limpiar_fallos_login(text, text) from public, anon, authenticated;
+grant execute on function public.reservar_intento_login(text, text) to service_role;
+grant execute on function public.limpiar_fallos_login(text, text) to service_role;

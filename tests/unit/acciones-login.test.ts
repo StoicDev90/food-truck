@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const m = vi.hoisted(() => ({
   signIn: vi.fn(),
   signOut: vi.fn(),
-  estaBloqueado: vi.fn(),
-  registrarFallo: vi.fn(),
+  reservarIntento: vi.fn(),
   limpiarFallos: vi.fn(),
   obtenerPerfil: vi.fn(),
 }))
@@ -27,8 +26,7 @@ vi.mock('@/lib/auth/sesion', () => ({ obtenerPerfil: m.obtenerPerfil }))
 vi.mock('@/lib/auth/limite-login', async () => ({
   ...(await import('@/lib/auth/claves-login')),
   MENSAJE_BLOQUEO: 'BLOQUEO',
-  estaBloqueado: m.estaBloqueado,
-  registrarFallo: m.registrarFallo,
+  reservarIntento: m.reservarIntento,
   limpiarFallos: m.limpiarFallos,
 }))
 
@@ -68,43 +66,41 @@ const casos = [
 
 beforeEach(() => {
   vi.resetAllMocks()
-  m.estaBloqueado.mockResolvedValue(false)
+  m.reservarIntento.mockResolvedValue(true)
   m.signIn.mockResolvedValue({ error: null })
 })
 
 describe.each(casos)('$nombre', (c) => {
-  it('bloqueado: devuelve MENSAJE_BLOQUEO sin signIn ni registrarFallo', async () => {
-    m.estaBloqueado.mockResolvedValue(true)
+  it('bloqueado: devuelve MENSAJE_BLOQUEO sin signIn ni limpiarFallos', async () => {
+    m.reservarIntento.mockResolvedValue(false)
     expect(await c.accion(prev, c.form)).toEqual({ error: 'BLOQUEO' })
-    expect(m.estaBloqueado).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
+    expect(m.reservarIntento).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
     expect(m.signIn).not.toHaveBeenCalled()
-    expect(m.registrarFallo).not.toHaveBeenCalled()
-  })
-
-  it('signIn falla: registra fallo con cuenta e IP y devuelve error genérico', async () => {
-    m.signIn.mockResolvedValue({ error: new Error('bad') })
-    expect(await c.accion(prev, c.form)).toEqual({ error: c.errorGenerico })
-    expect(m.registrarFallo).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
     expect(m.limpiarFallos).not.toHaveBeenCalled()
   })
 
-  it('signIn ok con perfil inválido: limpia, signOut, no cuenta como fallo', async () => {
+  it('signIn falla: el intento ya estaba reservado; error genérico y sin limpiar', async () => {
+    m.signIn.mockResolvedValue({ error: new Error('bad') })
+    expect(await c.accion(prev, c.form)).toEqual({ error: c.errorGenerico })
+    expect(m.reservarIntento).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
+    expect(m.limpiarFallos).not.toHaveBeenCalled()
+  })
+
+  it('signIn ok con perfil inválido: limpia, signOut, ', async () => {
     m.obtenerPerfil.mockResolvedValue(c.perfilMal)
     expect(await c.accion(prev, c.form)).toEqual({ error: c.msgPerfilMal })
-    expect(m.limpiarFallos).toHaveBeenCalledWith(c.cuenta)
+    expect(m.limpiarFallos).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
     expect(m.signOut).toHaveBeenCalled()
-    expect(m.registrarFallo).not.toHaveBeenCalled()
   })
 
   it('signIn ok con perfil válido: limpia y redirige', async () => {
     m.obtenerPerfil.mockResolvedValue(c.perfilOk)
     await expect(c.accion(prev, c.form)).rejects.toThrow(`REDIRECT:${c.destino}`)
-    expect(m.limpiarFallos).toHaveBeenCalledWith(c.cuenta)
-    expect(m.registrarFallo).not.toHaveBeenCalled()
+    expect(m.limpiarFallos).toHaveBeenCalledWith(c.cuenta, 'ip:1.2.3.4')
   })
 
-  it('estaBloqueado rechaza: la acción rechaza (fail-closed) sin signIn', async () => {
-    m.estaBloqueado.mockRejectedValue(new Error('db caída'))
+  it('reservarIntento rechaza: la acción rechaza (fail-closed) sin signIn', async () => {
+    m.reservarIntento.mockRejectedValue(new Error('db caída'))
     await expect(c.accion(prev, c.form)).rejects.toThrow('db caída')
     expect(m.signIn).not.toHaveBeenCalled()
   })
@@ -115,8 +111,23 @@ describe('loginEmpleado formato inválido', () => {
     expect(await loginEmpleado(prev, fd({ usuario: 'a', pin: '12' }))).toEqual({
       error: 'Usuario o PIN incorrecto',
     })
-    expect(m.estaBloqueado).not.toHaveBeenCalled()
-    expect(m.registrarFallo).not.toHaveBeenCalled()
+    expect(m.reservarIntento).not.toHaveBeenCalled()
+    expect(m.signIn).not.toHaveBeenCalled()
+  })
+})
+
+describe('loginDueno formato inválido', () => {
+  it.each([
+    ['email de empleado', 'pepe@empleados.local'],
+    ['email de empleado en mayúsculas', ' Pepe@Empleados.LOCAL '],
+    ['sin arroba', 'pepe'],
+    ['vacío', ''],
+    ['más de 254 caracteres', 'a'.repeat(250) + '@b.co'],
+  ])('%s: error genérico sin limiter ni signIn', async (_n, email) => {
+    expect(await loginDueno(prev, fd({ email, password: 'x' }))).toEqual({
+      error: 'Email o contraseña incorrectos',
+    })
+    expect(m.reservarIntento).not.toHaveBeenCalled()
     expect(m.signIn).not.toHaveBeenCalled()
   })
 })

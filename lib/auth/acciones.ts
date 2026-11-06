@@ -3,17 +3,16 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { crearClienteServidor } from '@/lib/supabase/server'
-import { emailDeUsuario, validarPin, validarUsuario } from './empleado'
+import { DOMINIO_EMPLEADOS, emailDeUsuario, validarPin, validarUsuario } from './empleado'
 import { resolverAcceso, type Seccion } from './acceso'
 import { obtenerPerfil } from './sesion'
 import {
   claveCuentaDueno,
   claveCuentaEmpleado,
-  estaBloqueado,
   ipDeEncabezados,
   limpiarFallos,
   MENSAJE_BLOQUEO,
-  registrarFallo,
+  reservarIntento,
 } from './limite-login'
 
 export type EstadoLogin = { error: string | null }
@@ -31,18 +30,15 @@ export async function loginEmpleado(_prev: EstadoLogin, fd: FormData): Promise<E
 
   const cuenta = claveCuentaEmpleado(usuario)
   const ip = ipDeEncabezados(await headers())
-  if (await estaBloqueado(cuenta, ip)) return { error: MENSAJE_BLOQUEO }
+  if (!(await reservarIntento(cuenta, ip))) return { error: MENSAJE_BLOQUEO }
 
   const supabase = await crearClienteServidor()
   const { error: e } = await supabase.auth.signInWithPassword({
     email: emailDeUsuario(usuario),
     password: pin,
   })
-  if (e) {
-    await registrarFallo(cuenta, ip)
-    return error
-  }
-  await limpiarFallos(cuenta)
+  if (e) return error
+  await limpiarFallos(cuenta, ip)
 
   const perfil = await obtenerPerfil()
   if (!perfil || resolverAcceso(perfil, 'pos') === 'login') {
@@ -54,20 +50,25 @@ export async function loginEmpleado(_prev: EstadoLogin, fd: FormData): Promise<E
 
 export async function loginDueno(_prev: EstadoLogin, fd: FormData): Promise<EstadoLogin> {
   const email = campo(fd, 'email').trim()
+  // Los empleados tienen su propio contador (por usuario); este formulario no puede ser un segundo.
+  if (
+    !email.includes('@') ||
+    email.length > 254 ||
+    email.toLowerCase().endsWith(DOMINIO_EMPLEADOS)
+  ) {
+    return { error: 'Email o contraseña incorrectos' }
+  }
   const cuenta = claveCuentaDueno(email)
   const ip = ipDeEncabezados(await headers())
-  if (await estaBloqueado(cuenta, ip)) return { error: MENSAJE_BLOQUEO }
+  if (!(await reservarIntento(cuenta, ip))) return { error: MENSAJE_BLOQUEO }
 
   const supabase = await crearClienteServidor()
   const { error: e } = await supabase.auth.signInWithPassword({
     email,
     password: campo(fd, 'password'),
   })
-  if (e) {
-    await registrarFallo(cuenta, ip)
-    return { error: 'Email o contraseña incorrectos' }
-  }
-  await limpiarFallos(cuenta)
+  if (e) return { error: 'Email o contraseña incorrectos' }
+  await limpiarFallos(cuenta, ip)
 
   const perfil = await obtenerPerfil()
   if (!perfil || resolverAcceso(perfil, 'admin') === 'login') {

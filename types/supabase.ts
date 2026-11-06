@@ -379,16 +379,10 @@ isOneToOne: false
             }[]
                            },
 "limpiar_fallos_login":
-{ Args: { "p_cuenta": string }; Returns: undefined
-                           },
-"login_bloqueado":
-{ Args: { "p_cuenta": string,"p_ip": string }; Returns: boolean
+{ Args: { "p_cuenta": string,"p_ip": string }; Returns: undefined
                            },
 "registrar_cotizacion_api":
 { Args: { "p_fecha": string,"p_fuente": string,"p_valor": number }; Returns: undefined
-                           },
-"registrar_fallo_login":
-{ Args: { "p_cuenta": string,"p_ip": string }; Returns: undefined
                            },
 "registrar_ingreso_stock":
 { Args: { "p_cantidad": number,"p_motivo"?: string,"p_producto_id": string }; Returns: number
@@ -400,6 +394,9 @@ isOneToOne: false
 { Args: { "p_clave": string,"p_items": Json,"p_medio": Database["public"]['Enums']["medio_pago"],"p_monto_recibido"?: number }; Returns: {
               "cotizacion": number,"equivalente_gs": number,"total_gs": number,"venta_id": string,"vuelto_gs": number
             }[]
+                           },
+"reservar_intento_login":
+{ Args: { "p_cuenta": string,"p_ip": string }; Returns: boolean
                            },
 "resumen_turno":
 { Args: { "p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]

@@ -5,5 +5,7 @@ export const validarUsuario = (s: string): boolean =>
 
 export const validarPin = (pin: string): boolean => /^\d{6}$/.test(pin)
 
+export const DOMINIO_EMPLEADOS = '@empleados.local'
+
 export const emailDeUsuario = (usuario: string): string =>
-  `${normalizarUsuario(usuario)}@empleados.local`
+  `${normalizarUsuario(usuario)}${DOMINIO_EMPLEADOS}`
