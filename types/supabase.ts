@@ -311,8 +311,30 @@ isOneToOne: false
 "_probe_default_acl":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"_resumen_turno":
+{ Args: { "p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]
+                          SetofOptions: {
+        from: "*"
+        to: "resumen_caja"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"abrir_turno":
+{ Args: { "p_fondo_brl": number,"p_fondo_gs": number }; Returns: string
+                           },
 "ajustar_stock":
 { Args: { "p_cantidad": number,"p_motivo": string,"p_producto_id": string }; Returns: number
+                           },
+"cerrar_turno":
+{ Args: { "p_contado_brl": number,"p_contado_gs": number,"p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]
+                          SetofOptions: {
+        from: "*"
+        to: "resumen_caja"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"corregir_conteo":
+{ Args: { "p_contado_brl": number,"p_contado_gs": number,"p_motivo": string,"p_turno_id": string }; Returns: undefined
                            },
 "costos_productos":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -331,21 +353,44 @@ isOneToOne: false
 "fijar_cotizacion_manual":
 { Args: { "p_valor": number }; Returns: undefined
                            },
+"fondo_sugerido":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "fondo_brl": number,"fondo_gs": number
+            }[]
+                           },
 "registrar_cotizacion_api":
 { Args: { "p_fecha": string,"p_fuente": string,"p_valor": number }; Returns: undefined
                            },
 "registrar_ingreso_stock":
 { Args: { "p_cantidad": number,"p_motivo"?: string,"p_producto_id": string }; Returns: number
                            },
+"registrar_movimiento_caja":
+{ Args: { "p_moneda": Database["public"]['Enums']["moneda"],"p_monto": number,"p_motivo": string,"p_sentido": Database["public"]['Enums']["sentido_caja"],"p_tipo": Database["public"]['Enums']["tipo_mov_caja"] }; Returns: string
+                           },
+"resumen_turno":
+{ Args: { "p_turno_id": string }; Returns: Database["public"]['CompositeTypes']["resumen_caja"]
+                          SetofOptions: {
+        from: "*"
+        to: "resumen_caja"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "rol_actual":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol_usuario"]
+                           },
+"turno_actual":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "abierto_at": string,"empleado_id": string,"empleado_nombre": string,"id": string
+            }[]
                            }
           }
           Enums: {
             "estado_venta": "confirmada"|"anulada","medio_pago": "efectivo_gs"|"efectivo_brl"|"transferencia"|"tarjeta","moneda": "PYG"|"BRL","rol_usuario": "dueno"|"empleado","sentido_caja": "entrada"|"salida","tipo_mov_caja": "retiro"|"pago_proveedor"|"aporte_cambio"|"cambio_moneda"|"otro","tipo_mov_stock": "ingreso"|"venta"|"anulacion"|"ajuste"
           }
           CompositeTypes: {
-            [_ in never]: never
+            "resumen_caja": {
+                        "esperado_gs": number | null,"esperado_brl": number | null,"contado_gs": number | null,"contado_brl": number | null,"diferencia_gs": number | null,"diferencia_brl": number | null,"transferencias_gs": number | null,"tarjetas_gs": number | null
+                      }
           }
         }
 }
