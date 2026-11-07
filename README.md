@@ -88,6 +88,8 @@ npm run db:demo
 
 `db reset` borra todos los datos de la base **local** únicamente. El script se niega a cargar datos si ya existen categorías o perfiles.
 
+La carga crea 3 categorías, 32 productos, 2 perfiles, 10 ventas y 12 movimientos de caja, con un turno abierto. Acceso de dueño: `neiff@patriarca.com.br` / `Magno2026Oasis`; empleado: `fede` / `123456`. Las fotos ilustrativas provienen de Unsplash; ver [créditos](scripts/demo-fotos/CREDITOS.md).
+
 ## Scripts
 
 | Command | What it does |
