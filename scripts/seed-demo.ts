@@ -138,6 +138,8 @@ async function main() {
     { items: [['Coxinha', 2]], medio: 'tarjeta' },
     { items: [['Pancho', 1], ['Cerveza Pilsen lata', 1]], medio: 'efectivo_gs', recibido: 25000 },
     { items: [['Papas fritas', 1], ['Jugo de naranja', 1]], medio: 'efectivo_gs', recibido: 30000 },
+    { items: [['Mbeju', 1]], medio: 'efectivo_brl', recibido: 10 },
+    { items: [['Caipirinha', 1]], medio: 'efectivo_brl', recibido: 25 },
   ]
   for (const venta of ventas) {
     const items = venta.items.map(([nombre, cantidad]) => {
@@ -148,26 +150,7 @@ async function main() {
     const { error } = await empleado.rpc('registrar_venta', { p_clave: randomUUID(), p_items: items, p_medio: venta.medio, ...(venta.recibido !== undefined ? { p_monto_recibido: venta.recibido } : {}) })
     if (error) throw error
   }
-  type Movimiento = Database['public']['Functions']['registrar_movimiento_caja']['Args']
-  const movimientos: Movimiento[] = [
-    { p_sentido: 'entrada', p_tipo: 'aporte_cambio', p_moneda: 'PYG', p_monto: 50000, p_motivo: 'Aporte de cambio en billetes chicos' },
-    { p_sentido: 'salida', p_tipo: 'pago_proveedor', p_moneda: 'PYG', p_monto: 30000, p_motivo: 'Pago a proveedor de hielo' },
-    { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'PYG', p_monto: 40000, p_motivo: 'Retiro del dueño' },
-    { p_sentido: 'entrada', p_tipo: 'otro', p_moneda: 'PYG', p_monto: 20000, p_motivo: 'Cambio de reales a guaraníes' },
-    { p_sentido: 'salida', p_tipo: 'otro', p_moneda: 'PYG', p_monto: 10000, p_motivo: 'Compra de servilletas' },
-    { p_sentido: 'entrada', p_tipo: 'aporte_cambio', p_moneda: 'PYG', p_monto: 15000, p_motivo: 'Reposición de monedas' },
-    { p_sentido: 'entrada', p_tipo: 'aporte_cambio', p_moneda: 'BRL', p_monto: 50, p_motivo: 'Aporte de cambio en reales' },
-    { p_sentido: 'salida', p_tipo: 'pago_proveedor', p_moneda: 'BRL', p_monto: 10, p_motivo: 'Pago de vasos al proveedor' },
-    { p_sentido: 'salida', p_tipo: 'retiro', p_moneda: 'BRL', p_monto: 20, p_motivo: 'Retiro de reales del dueño' },
-    { p_sentido: 'entrada', p_tipo: 'otro', p_moneda: 'BRL', p_monto: 10, p_motivo: 'Cambio de guaraníes a reales' },
-    { p_sentido: 'salida', p_tipo: 'otro', p_moneda: 'BRL', p_monto: 5, p_motivo: 'Compra de bolsas' },
-    { p_sentido: 'entrada', p_tipo: 'aporte_cambio', p_moneda: 'BRL', p_monto: 5, p_motivo: 'Aporte de monedas en reales' },
-  ]
-  for (const movimiento of movimientos) {
-    const { error } = await owner.rpc('registrar_movimiento_caja', movimiento)
-    if (error) throw error
-  }
-  console.log(`Creados: 3 categorías, 32 productos, 2 perfiles, 10 ventas, 12 movimientos de caja, 1 turno abierto y cotización 1450.
+  console.log(`Creados: 3 categorías, 32 productos, 2 perfiles, 12 ventas, 0 movimientos de caja, 1 turno abierto y cotización 1450.
 Menú: http://localhost:3000/
 POS: http://localhost:3000/pos/login
 Admin: http://localhost:3000/admin/login
