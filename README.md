@@ -90,6 +90,18 @@ npm run db:demo
 
 La carga crea 3 categorías, 32 productos, 2 perfiles, 12 ventas y 0 movimientos de caja, con un turno abierto. Dueño: neiff@patriarca.com.br / Magno2026Oasis; empleado: `fede` / `123456`. Las fotos ilustrativas provienen de Unsplash; ver [créditos](scripts/demo-fotos/CREDITOS.md).
 
+### Cargar la demo en un Supabase en la nube
+
+En un proyecto Supabase separado para la demo, aplicá primero las migraciones con `npx supabase db push --remote`.
+
+Creá `.env.demo` con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` de Project Settings -> API, y `EMPLEADO_PIN_PEPPER`. Generá el pepper con `openssl rand -base64 48` y usá exactamente el mismo valor después en Vercel.
+
+```bash
+npm run db:demo:remoto -- <ref>
+```
+
+La referencia debe corresponder al proyecto demo; el script también rechaza la carga si ya hay categorías o perfiles.
+
 ## Scripts
 
 | Command | What it does |

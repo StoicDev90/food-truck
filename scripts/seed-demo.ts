@@ -6,6 +6,7 @@ import { emailDeUsuario } from '../lib/auth/empleado'
 import { derivarPasswordEmpleado } from '../lib/auth/pin-derivacion'
 import type { Horarios } from '../lib/admin/horarios'
 import type { Database } from '../types/supabase'
+import { destinoPermitido } from './seed-demo-destino'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -16,9 +17,13 @@ class DemoError extends Error {}
 const mensajeBase = 'La base ya tiene datos. Para empezar de cero: npx supabase db reset (borra la base local) y volvé a correr npm run db:demo.'
 
 async function main() {
-  let host: string
-  try { host = new URL(url ?? '').hostname } catch { throw new DemoError('NEXT_PUBLIC_SUPABASE_URL no es una URL válida') }
-  if (host !== '127.0.0.1' && host !== 'localhost') throw new DemoError('Solo se permite cargar datos en Supabase local')
+  const indiceRemoto = process.argv.indexOf('--remoto')
+  const refRemoto = indiceRemoto === -1 ? null : (process.argv[indiceRemoto + 1] ?? '')
+  if (!destinoPermitido(url, refRemoto)) {
+    throw new DemoError(refRemoto === null
+      ? 'Solo se permite cargar datos en Supabase local'
+      : 'Destino no permitido: la URL de Supabase no coincide con --remoto <ref>')
+  }
   if (!url || !anonKey || !serviceKey) throw new DemoError('Faltan variables de Supabase en .env.local')
   // Validar el pepper antes de realizar cualquier escritura.
   if (!pepper || pepper.length < 32) throw new DemoError('EMPLEADO_PIN_PEPPER falta o tiene menos de 32 caracteres')
